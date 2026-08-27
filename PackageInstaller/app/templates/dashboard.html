@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>User Dashboard</title>
+  <style>
+    :root {
+      --bg1:#f6f8ff;
+      --bg2:#eef7f3;
+      --card:#ffffff;
+      --text:#17212b;
+      --muted:#61707f;
+      --line:#d7dee8;
+      --accent:#1d4ed8;
+      --accent2:#0f766e;
+      --soft:#eef2ff;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Arial, sans-serif;
+      color: var(--text);
+      background: radial-gradient(circle at top left, var(--bg2), transparent 32%), linear-gradient(180deg, var(--bg1), #ffffff);
+    }
+    header {
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      padding:22px 28px;
+    }
+    .pill {
+      display:inline-flex;
+      align-items:center;
+      padding:8px 12px;
+      border-radius:999px;
+      background:var(--soft);
+      color:#0b4f8a;
+      font-weight:700;
+      font-size:13px;
+    }
+    .logout {
+      text-decoration:none;
+      color:#fff;
+      background:linear-gradient(135deg, var(--accent), var(--accent2));
+      padding:10px 16px;
+      border-radius:12px;
+      font-weight:700;
+    }
+    .nav-link {
+      text-decoration:none;
+      color:#fff;
+      background:linear-gradient(135deg, #2563eb, #0f766e);
+      padding:10px 16px;
+      border-radius:12px;
+      font-weight:700;
+      display:inline-block;
+    }
+    main { padding:0 28px 28px; }
+    .shell {
+      background:rgba(255,255,255,0.9);
+      border:1px solid var(--line);
+      border-radius:24px;
+      padding:24px;
+      box-shadow:0 16px 40px rgba(16,24,40,0.08);
+    }
+    h1 { margin:10px 0 8px; font-size:34px; line-height:1.1; }
+    .sub { margin:0; color:var(--muted); font-size:16px; line-height:1.5; max-width:920px; }
+    .grid {
+      display:grid;
+      grid-template-columns:repeat(auto-fit, minmax(260px, 1fr));
+      gap:16px;
+      margin-top:18px;
+    }
+    .card {
+      background:var(--card);
+      border:1px solid var(--line);
+      border-radius:18px;
+      padding:18px;
+    }
+    .card h2 { margin:0 0 10px; font-size:18px; }
+    .label { color:var(--muted); font-size:13px; margin-bottom:4px; }
+    .value { font-size:16px; font-weight:700; }
+    .machine-list {
+      margin:0;
+      padding-left:18px;
+    }
+    .machine-list li { margin:6px 0; }
+    .footer {
+      margin-top:22px;
+      padding-top:16px;
+      border-top:1px solid var(--line);
+      color:var(--muted);
+      display:flex;
+      justify-content:space-between;
+      gap:12px;
+      flex-wrap:wrap;
+      font-size:13px;
+    }
+    .brand { font-weight:700; color:var(--text); }
+    .stats {
+      display:grid;
+      grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));
+      gap:16px;
+      margin-top:18px;
+    }
+    .stat {
+      background:linear-gradient(180deg, #fff, #f7fbff);
+      border:1px solid var(--line);
+      border-radius:18px;
+      padding:18px;
+    }
+    .stat .num { font-size:32px; font-weight:800; }
+    .stat .text { color:var(--muted); font-size:13px; margin-top:6px; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="pill">Logged in as {{ username }}</div>
+    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+      <a class="nav-link" href="/mapping">Device Test Mapping</a>
+      <a class="nav-link" href="/test-results">Test Results</a>
+      <a class="logout" href="/logout">Logout</a>
+    </div>
+  </header>
+  <main>
+    <section class="shell">
+      <div class="pill">User Dashboard</div>
+      <h1>{{ user_name }}</h1>
+      <p class="sub">This dashboard gives the lab owner a quick operational view of the configured installation, machine list, network details, and usage count.</p>
+
+      <div class="grid">
+        <div class="card">
+          <h2>User Details</h2>
+          <div class="label">User name</div>
+          <div class="value">{{ user_name }}</div>
+          <div class="label" style="margin-top:12px;">Address</div>
+          <div class="value">{{ address }}</div>
+          <div class="label" style="margin-top:12px;">Contact</div>
+          <div class="value">{{ contact }}</div>
+        </div>
+
+        <div class="card">
+          <h2>Machines</h2>
+          <div class="label">Machine names</div>
+          <ul class="machine-list">
+            {% for machine in machines %}
+            <li>{{ machine.machine_name }}</li>
+            {% endfor %}
+          </ul>
+        </div>
+
+        <div class="card">
+          <h2>Machine Network</h2>
+          <div class="label">Machine IP</div>
+          <div class="value">{{ machine_ip }}</div>
+          <div class="label" style="margin-top:12px;">Subnet mask</div>
+          <div class="value">{{ machine_subnet_mask }}</div>
+          <div class="label" style="margin-top:12px;">Port</div>
+          <div class="value">{{ machine_port }}</div>
+        </div>
+
+        <div class="card">
+          <h2>Computer Network</h2>
+          <div class="label">Computer IP</div>
+          <div class="value">{{ computer_ip }}</div>
+          <div class="label" style="margin-top:12px;">Subnet mask</div>
+          <div class="value">{{ computer_subnet_mask }}</div>
+        </div>
+      </div>
+
+      <div class="stats">
+        <div class="stat">
+          <div class="num">{{ test_count }}</div>
+          <div class="text">Number of tests done by the machine till date</div>
+        </div>
+        <div class="stat">
+          <div class="num">Map</div>
+          <div class="text">Open the device test mapping screen to configure analyzer to lab test links.</div>
+          <div style="margin-top:12px;">
+            <a class="nav-link" href="/mapping">Go to Mapping</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="footer">
+        <div>Copyright {{ 2026 }} ClickMicrosystem Pvt Ltd. All rights reserved.</div>
+        <div class="brand">Developed by ClickMicrosystem Pvt Ltd</div>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

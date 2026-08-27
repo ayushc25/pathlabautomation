@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Test Results</title>
+  <style>
+    :root {
+      --bg: #f4f7fb;
+      --panel: #ffffff;
+      --text: #142033;
+      --muted: #617286;
+      --line: #d8e1ec;
+      --primary: #1d4ed8;
+      --secondary: #0f766e;
+      --soft: #eef6ff;
+    }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family: Arial, sans-serif; color:var(--text); background: linear-gradient(180deg, #f8fbff 0%, var(--bg) 100%); }
+    header { display:flex; justify-content:space-between; align-items:center; padding:22px 28px; }
+    .pill { display:inline-flex; align-items:center; padding:8px 12px; border-radius:999px; background:var(--soft); color:#0b4f8a; font-weight:700; font-size:13px; }
+    .logout { text-decoration:none; color:#fff; background:linear-gradient(135deg, var(--primary), var(--secondary)); padding:10px 16px; border-radius:12px; font-weight:700; }
+    .nav-link { text-decoration:none; color:#fff; background:linear-gradient(135deg, #2563eb, var(--secondary)); padding:10px 16px; border-radius:12px; font-weight:700; }
+    main { padding:0 28px 28px; }
+    .shell { background:rgba(255,255,255,0.9); border:1px solid var(--line); border-radius:24px; padding:24px; box-shadow:0 16px 40px rgba(16,24,40,0.08); }
+    h1 { margin:10px 0 8px; font-size:30px; line-height:1.1; }
+    .sub { margin:0; color:var(--muted); font-size:15px; line-height:1.5; max-width:900px; }
+    .info-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:16px; margin-top:18px; }
+    .card { background:var(--panel); border:1px solid var(--line); border-radius:18px; padding:18px; }
+    .card h2 { margin:0 0 10px; font-size:18px; }
+    label { font-size:13px; font-weight:700; display:block; margin-bottom:6px; }
+    select { width:100%; padding:12px 13px; border-radius:12px; border:1px solid var(--line); background:#fff; font-size:14px; }
+    .mono { font-family:Consolas, monospace; }
+
+    .panels { margin-top:20px; display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+    @media (max-width: 900px) { .panels { grid-template-columns:1fr; } }
+    .panel { background:var(--panel); border:1px solid var(--line); border-radius:18px; padding:18px; display:flex; flex-direction:column; min-height:520px; }
+    .panel h2 { margin:0 0 12px; font-size:18px; }
+    .panel-scroll { overflow-y:auto; max-height:640px; display:flex; flex-direction:column; gap:12px; }
+
+    .record-row { border:1px solid var(--line); border-radius:14px; padding:12px; background:#fbfdff; }
+    .record-head { display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:8px; flex-wrap:wrap; }
+    .record-head .order { font-weight:700; }
+    .record-head .meta { color:var(--muted); font-size:12px; }
+    .record-row.active { border-color:var(--primary); box-shadow:0 0 0 2px rgba(29,78,216,0.15); }
+    .raw-packet { max-height:140px; overflow:auto; background:#0f172a; color:#e2e8f0; border-radius:10px; padding:10px; font-size:12px; white-space:pre-wrap; word-break:break-all; margin:0; }
+    .decode-btn { margin-top:10px; border:0; border-radius:10px; padding:8px 14px; font-weight:700; cursor:pointer; color:#fff; background:linear-gradient(135deg, var(--primary), var(--secondary)); }
+    .decode-btn[disabled] { opacity:0.6; cursor:not-allowed; }
+    .empty-msg { color:var(--muted); font-size:14px; padding:20px; text-align:center; }
+
+    #decodedOutput { flex:1; background:#0f172a; color:#e2e8f0; border-radius:14px; padding:16px; font-size:13px; overflow:auto; white-space:pre-wrap; overflow-wrap:break-word; margin:0; min-height:400px; }
+    .decoded-head { color:var(--muted); font-size:13px; margin-bottom:8px; }
+
+    .push-actions { margin-top:20px; display:flex; gap:12px; flex-wrap:wrap; justify-content:flex-end; }
+    .push-btn { border:0; border-radius:12px; padding:12px 20px; font-weight:700; cursor:pointer; }
+    .push-current { color:#fff; background:linear-gradient(135deg, var(--primary), var(--secondary)); }
+    .push-all { color:var(--text); background:#fff; border:1px solid var(--line); }
+    .push-btn[disabled] { opacity:0.5; cursor:not-allowed; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="pill">Logged in as {{ username }}</div>
+    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+      <a class="nav-link" href="/dashboard">Home</a>
+      <a class="nav-link" href="/mapping">Device Test Mapping</a>
+      <a class="logout" href="/logout">Logout</a>
+    </div>
+  </header>
+  <main>
+    <section class="shell">
+      <div class="pill">Test Results</div>
+      <h1>Decode &amp; Review Captures</h1>
+      <p class="sub">Select the connected device, review the raw ASTM packets received from it, and decode any record to inspect the structured JSON result before pushing it onward.</p>
+
+      <div class="info-grid">
+        <div class="card">
+          <h2>Client</h2>
+          <div class="mono">{{ customer_name }}</div>
+        </div>
+        <div class="card">
+          <h2>Connected Device</h2>
+          <form method="post" action="/test-results/select-machine">
+            <label for="machine_id">Device</label>
+            <select id="machine_id" name="machine_id" onchange="this.form.submit()">
+              {% for option in machines %}
+              <option value="{{ option.id }}" {% if option.id == active_machine.id %}selected{% endif %}>{{ option.machine_name }}</option>
+              {% endfor %}
+            </select>
+          </form>
+        </div>
+      </div>
+
+      <div class="panels">
+        <div class="panel" style="height: 400px;">
+          <h2>Raw Packets</h2>
+          <div class="panel-scroll" id="rawPacketList">
+            {% for capture in raw_captures %}
+            <div class="record-row" id="record-{{ capture.id }}" data-id="{{ capture.id }}">
+              <div class="record-head">
+                <span class="order">Order # {{ capture.order_number or 'Unknown' }}</span>
+                <span class="meta">Patient ID: {{ capture.patient_id or 'Unknown' }}</span>
+              </div>
+              <div class="record-head">
+                <span class="meta">{{ capture.source }} &middot; {{ capture.received_at }}{% if capture.filename %} &middot; {{ capture.filename }}{% endif %}</span>
+              </div>
+              <pre class="raw-packet">{{ capture.payload }}</pre>
+              <button class="decode-btn" type="button" onclick="decodeRecord({{ capture.id }}, this)">Decode</button>
+            </div>
+            {% else %}
+            <div class="empty-msg">No raw captures received yet. Once the analyzer sends data (or a file is decoded via the API), records will appear here.</div>
+            {% endfor %}
+          </div>
+        </div>
+
+        <div class="panel" style="height: 400px;">
+          <h2>Decoded Result</h2>
+          <div class="decoded-head" id="decodedHead">Select a record on the left and click Decode to see its JSON result here.</div>
+          <pre id="decodedOutput">{}</pre>
+        </div>
+      </div>
+
+      <div class="push-actions">
+        <button class="push-btn push-current" id="pushCurrentBtn" type="button" onclick="pushCurrent()" disabled>Push Current</button>
+        <button class="push-btn push-all" id="pushAllBtn" type="button" onclick="pushAll()">Push All</button>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    let currentDecoded = null;
+
+    async function decodeRecord(rawCaptureId, button) {
+      const original = button.textContent;
+      button.disabled = true;
+      button.textContent = 'Decoding...';
+      try {
+        const response = await fetch(`/test-results/decode/${rawCaptureId}`, { method: 'POST' });
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.detail || `Decode failed with status ${response.status}`);
+        }
+
+        currentDecoded = data;
+        document.getElementById('decodedOutput').textContent = JSON.stringify(data.report, null, 2);
+        document.getElementById('decodedHead').textContent =
+          `Order # ${data.order_number || 'Unknown'} · Patient ID: ${data.patient_id || 'Unknown'}`;
+
+        document.querySelectorAll('.record-row.active').forEach(el => el.classList.remove('active'));
+        const row = document.getElementById(`record-${rawCaptureId}`);
+        if (row) row.classList.add('active');
+
+        document.getElementById('pushCurrentBtn').disabled = false;
+      } catch (err) {
+        document.getElementById('decodedOutput').textContent = `Error decoding record: ${err.message}`;
+        document.getElementById('decodedHead').textContent = `Order # ${rawCaptureId} (failed)`;
+      } finally {
+        button.disabled = false;
+        button.textContent = original;
+      }
+    }
+
+    function pushCurrent() {
+      if (!currentDecoded) return;
+      alert(`Push Current is not implemented yet. (Would push order #${currentDecoded.raw_capture_id})`);
+    }
+
+    function pushAll() {
+      alert('Push All is not implemented yet.');
+    }
+  </script>
+</body>
+</html>

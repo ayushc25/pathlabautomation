@@ -1,0 +1,818 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Piysan LIS Integration - LIS ASTM Gateway</title>
+  <meta name="description" content="Manage integration settings, synchronize lab test bookings, and review transmission results for Piysan LIS.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-slate: #f8fafc;
+      --card-bg: #ffffff;
+      --text-dark: #0f172a;
+      --text-muted: #64748b;
+      --border-color: #e2e8f0;
+      
+      --accent-indigo: #4f46e5;
+      --accent-teal: #0d9488;
+      --accent-gradient: linear-gradient(135deg, var(--accent-indigo), var(--accent-teal));
+      --accent-soft: rgba(79, 70, 229, 0.08);
+      
+      --danger-color: #ef4444;
+      --danger-soft: rgba(239, 68, 68, 0.08);
+      --success-color: #10b981;
+      --success-soft: rgba(16, 185, 129, 0.08);
+      --warning-color: #f59e0b;
+      --warning-soft: rgba(245, 158, 11, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+      transition: all 0.2s ease-in-out;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: 'Inter', sans-serif;
+      color: var(--text-dark);
+      background-color: var(--bg-slate);
+      background-image: radial-gradient(circle at 0% 0%, rgba(79, 70, 229, 0.03) 0%, transparent 50%),
+                        radial-gradient(circle at 100% 100%, rgba(13, 148, 136, 0.03) 0%, transparent 50%);
+    }
+
+    /* Header & Navigation */
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 20px 40px;
+      background: rgba(255, 255, 255, 0.8);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border-color);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .brand-section {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-logo {
+      width: 36px;
+      height: 36px;
+      background: var(--accent-gradient);
+      border-radius: 10px;
+      display: grid;
+      place-items: center;
+      color: white;
+      font-weight: 800;
+      font-size: 18px;
+      box-shadow: 0 4px 10px rgba(79, 70, 229, 0.25);
+    }
+
+    .brand-name {
+      font-weight: 700;
+      font-size: 18px;
+      letter-spacing: -0.02em;
+    }
+
+    .nav-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .nav-btn {
+      text-decoration: none;
+      color: var(--text-muted);
+      padding: 10px 18px;
+      border-radius: 12px;
+      font-weight: 600;
+      font-size: 14px;
+      border: 1px solid transparent;
+    }
+
+    .nav-btn:hover {
+      color: var(--text-dark);
+      background: var(--border-color);
+    }
+
+    .nav-btn.active {
+      color: var(--accent-indigo);
+      background: var(--accent-soft);
+      border-color: rgba(79, 70, 229, 0.15);
+    }
+
+    .btn-logout {
+      text-decoration: none;
+      color: var(--danger-color);
+      background: var(--danger-soft);
+      padding: 10px 18px;
+      border-radius: 12px;
+      font-weight: 600;
+      font-size: 14px;
+      border: 1px solid transparent;
+    }
+
+    .btn-logout:hover {
+      background: var(--danger-color);
+      color: white;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);
+    }
+
+    .pill-user {
+      display: inline-flex;
+      align-items: center;
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: #f1f5f9;
+      color: var(--text-muted);
+      font-weight: 500;
+      font-size: 13px;
+      border: 1px solid var(--border-color);
+    }
+
+    /* Main Container */
+    main {
+      padding: 40px;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .shell {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 24px;
+      padding: 32px;
+      box-shadow: 0 10px 30px rgba(15, 23, 42, 0.04);
+    }
+
+    .pill-page {
+      display: inline-block;
+      padding: 6px 14px;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: var(--accent-indigo);
+      font-weight: 700;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 16px;
+    }
+
+    h1 {
+      margin: 0 0 12px;
+      font-size: 36px;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+    }
+
+    .sub {
+      margin: 0 0 24px;
+      color: var(--text-muted);
+      font-size: 16px;
+      line-height: 1.6;
+      max-width: 900px;
+    }
+
+    /* Banners */
+    .banner, .warning {
+      margin-bottom: 24px;
+      padding: 16px 20px;
+      border-radius: 16px;
+      font-size: 14px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .banner {
+      background: var(--success-soft);
+      color: var(--success-color);
+      border: 1px solid rgba(16, 185, 129, 0.15);
+    }
+
+    .warning {
+      background: var(--danger-soft);
+      color: var(--danger-color);
+      border: 1px solid rgba(239, 68, 68, 0.15);
+    }
+
+    /* Controls Grid */
+    .controls-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 24px;
+      margin-bottom: 24px;
+    }
+
+    @media (max-width: 992px) {
+      .controls-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 20px;
+      padding: 24px;
+      box-shadow: 0 2px 4px rgba(15, 23, 42, 0.02);
+    }
+
+    .card h2 {
+      margin: 0 0 18px;
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 10px;
+    }
+
+    label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      display: block;
+      margin-bottom: 8px;
+    }
+
+    input[type="text"], input[type="password"] {
+      width: 100%;
+      padding: 14px 16px;
+      border-radius: 12px;
+      border: 1px solid var(--border-color);
+      background: #ffffff;
+      font-size: 14px;
+      color: var(--text-dark);
+      font-family: inherit;
+      font-weight: 500;
+    }
+
+    input:focus {
+      outline: none;
+      border-color: var(--accent-indigo);
+      box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12);
+    }
+
+    .field {
+      margin-bottom: 18px;
+    }
+
+    .row-fields {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .row-fields > div {
+      flex: 1;
+      min-width: 200px;
+    }
+
+    /* Switch Style */
+    .switch-field {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-top: 10px;
+    }
+
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 48px;
+      height: 24px;
+    }
+
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #cbd5e1;
+      border-radius: 24px;
+    }
+
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      border-radius: 50%;
+    }
+
+    input:checked + .slider {
+      background-color: var(--accent-teal);
+    }
+
+    input:checked + .slider:before {
+      transform: translateX(24px);
+    }
+
+    /* Buttons */
+    .btn {
+      border: 0;
+      border-radius: 12px;
+      padding: 14px 20px;
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .btn-primary {
+      color: #ffffff;
+      background: var(--accent-gradient);
+      box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(79, 70, 229, 0.4);
+    }
+
+    .btn-secondary {
+      color: var(--text-dark);
+      background: #ffffff;
+      border: 1px solid var(--border-color);
+    }
+
+    .btn-secondary:hover {
+      background: var(--bg-slate);
+      border-color: #cbd5e1;
+    }
+
+    .btn-action-sm {
+      padding: 6px 12px;
+      font-size: 12px;
+      border-radius: 8px;
+    }
+
+    /* Badges */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 8px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .badge-success {
+      background: var(--success-soft);
+      color: var(--success-color);
+      border: 1px solid rgba(16, 185, 129, 0.15);
+    }
+
+    .badge-danger {
+      background: var(--danger-soft);
+      color: var(--danger-color);
+      border: 1px solid rgba(239, 68, 68, 0.15);
+    }
+
+    .badge-warning {
+      background: var(--warning-soft);
+      color: var(--warning-color);
+      border: 1px solid rgba(245, 158, 11, 0.15);
+    }
+
+    .badge-muted {
+      background: #f1f5f9;
+      color: var(--text-muted);
+      border: 1px solid var(--border-color);
+    }
+
+    /* Tables */
+    .table-container {
+      margin-top: 24px;
+    }
+
+    .table-responsive {
+      width: 100%;
+      overflow-x: auto;
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      background: #ffffff;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .grid-table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 14px;
+    }
+
+    .grid-table th {
+      background: #f8fafc;
+      color: var(--text-muted);
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .grid-table td {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border-color);
+      color: var(--text-dark);
+      font-weight: 500;
+      vertical-align: middle;
+    }
+
+    .grid-table tr:last-child td {
+      border-bottom: 0;
+    }
+
+    .grid-table tr:hover td {
+      background: #fafafa;
+    }
+
+    .mono {
+      font-family: Consolas, Monaco, monospace;
+      font-size: 13px;
+      background: #f1f5f9;
+      padding: 4px 8px;
+      border-radius: 6px;
+      display: inline-block;
+      font-weight: 600;
+    }
+
+    .preview-list {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .preview-list li {
+      font-size: 12px;
+    }
+
+    .preview-val {
+      font-weight: 700;
+      color: var(--accent-indigo);
+    }
+
+    /* JSON log panel */
+    details {
+      background: #0f172a;
+      color: #38bdf8;
+      border-radius: 8px;
+      padding: 8px 12px;
+      cursor: pointer;
+    }
+
+    details[open] {
+      padding-bottom: 12px;
+    }
+
+    details summary {
+      font-weight: 700;
+      font-size: 12px;
+      color: rgba(255,255,255,0.7);
+      outline: none;
+    }
+
+    details pre {
+      margin: 8px 0 0 0;
+      font-family: Consolas, Monaco, monospace;
+      font-size: 11px;
+      white-space: pre-wrap;
+      word-break: break-all;
+      overflow-x: auto;
+      max-height: 150px;
+      color: #38bdf8;
+    }
+
+    @media (max-width: 768px) {
+      header {
+        padding: 16px 20px;
+      }
+      main {
+        padding: 16px;
+      }
+      .shell {
+        padding: 20px;
+      }
+      h1 {
+        font-size: 28px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand-section">
+      <div class="brand-logo">H</div>
+      <div class="brand-name">LIS ASTM Gateway</div>
+      <div class="pill-user">Logged in as {{ username }}</div>
+    </div>
+    <nav class="nav-group">
+      <a class="nav-btn" href="/dashboard" id="navDashboard">Dashboard</a>
+      <a class="nav-btn" href="/mapping" id="navMapping">Mapping Setup</a>
+      <a class="nav-btn" href="/test-results" id="navResults">Test Results</a>
+      <a class="nav-btn" href="/push-command" id="navPush">Push Command</a>
+      <a class="nav-btn active" href="/piysan" id="navPiysan">Piysan LIS</a>
+      <a class="btn-logout" href="/logout" id="navLogout">Logout</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="shell">
+      <span class="pill-page">LIS Integration</span>
+      <h1>Piysan LIS APIs</h1>
+      <p class="sub">Configure credentials to establish connection, view synchronised diagnostic bookings, verify analyzer matched parameters, and push test values directly back to the Piysan staging or production systems.</p>
+      
+      <div id="statusAlertContainer">
+        {% if saved %}
+        <div class="banner" id="bannerSuccess">Integration settings saved successfully.</div>
+        {% endif %}
+        {% if sync %}
+        <div class="banner" id="bannerSync">Laboratory bookings synchronised successfully from Piysan.</div>
+        {% endif %}
+        {% if error %}
+        <div class="warning" id="bannerError">Operation failed: {{ error }}</div>
+        {% endif %}
+      </div>
+
+      <div class="controls-grid">
+        <div class="card" id="cardPiysanConfig">
+          <h2>API Credentials</h2>
+          <form method="post" action="/piysan/settings" id="formPiysanSettings">
+            <div class="field">
+              <label for="base_url">Base URL <span style="font-weight:500; text-transform:none; letter-spacing:0;">(set via PIYSAN_BASE_URL env var — not editable here)</span></label>
+              <input type="text" id="base_url" value="{{ active_base_url }}" disabled style="background:#f1f5f9; color:var(--text-muted); cursor:not-allowed;">
+            </div>
+            <div class="row-fields">
+              <div class="field">
+                <label for="mobile">Lab Account Mobile Number</label>
+                <input type="text" id="mobile" name="mobile" value="{{ settings.mobile or '' }}" required placeholder="e.g. 9876543210">
+              </div>
+              <div class="field">
+                <label for="password">Lab Password</label>
+                <input type="password" id="password" name="password" value="{{ settings.password or '' }}" required placeholder="your password">
+              </div>
+            </div>
+            <div class="field switch-field">
+              <label class="switch">
+                <input type="checkbox" id="auto_submit" name="auto_submit" {% if settings.auto_submit %}checked{% endif %}>
+                <span class="slider"></span>
+              </label>
+              <span style="font-size: 14px; font-weight: 600; color: var(--text-dark);">
+                Automatically push analyzer results upon decoding
+              </span>
+            </div>
+            
+            <div style="display: flex; gap: 12px; margin-top: 24px;">
+              <button class="btn btn-primary" type="submit" id="btnSaveConfig">Save Settings</button>
+              <button class="btn btn-secondary" type="button" onclick="testConnection()" id="btnTestConnection">Test Connection</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="card" id="cardIntegrationStats">
+          <h2>Connection Summary</h2>
+          <div class="field">
+            <label>API Endpoint Status</label>
+            <div style="display: flex; align-items: center; gap: 8px; margin-top: 4px;">
+              {% if settings.jwt_token %}
+              <span class="badge badge-success" id="connectionBadge">Active Session</span>
+              {% else %}
+              <span class="badge badge-danger" id="connectionBadge">Disconnected</span>
+              {% endif %}
+            </div>
+          </div>
+          <div class="field">
+            <label>Auto-Submit Mode</label>
+            <div style="margin-top: 4px; font-weight: 600; font-size: 14px;">
+              {% if settings.auto_submit %}
+              <span class="badge badge-success">Enabled</span>
+              {% else %}
+              <span class="badge badge-warning">Disabled (Manual Only)</span>
+              {% endif %}
+            </div>
+          </div>
+          <div class="field" style="margin-bottom: 0;">
+            <label>Total Bookings Cached</label>
+            <div style="margin-top: 4px; font-weight: 700; font-size: 20px; color: var(--accent-indigo);">
+              {{ bookings|length }}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="table-container">
+        <div class="card" id="cardPiysanBookings" style="padding: 24px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; flex-wrap: wrap; gap: 12px;">
+            <h2 style="margin: 0; border:0; padding:0;">Synchronised Lab Bookings</h2>
+            <form method="post" action="/piysan/fetch-bookings" id="formFetchBookings" style="margin:0;">
+              <input type="hidden" name="next_page" value="/piysan">
+              <button class="btn btn-primary btn-action-sm" type="submit" id="btnSyncBookings">Fetch Latest Bookings</button>
+            </form>
+          </div>
+          <div class="table-responsive">
+            <table class="grid-table">
+              <thead>
+                <tr>
+                  <th>Booking Ref</th>
+                  <th>Patient Info</th>
+                  <th>Assigned Tests</th>
+                  <th style="width: 140px; text-align: center;">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for row in bookings %}
+                <tr>
+                  <td class="mono">{{ row.reference_no }}</td>
+                  <td>
+                    <div style="font-weight: 700;">{{ row.patient_name or 'N/A' }}</div>
+                    <div class="meta" style="font-size:12px; color:var(--text-muted);">ID: {{ row.patient_id or 'N/A' }}</div>
+                  </td>
+                  <td>
+                    <ul class="preview-list">
+                      {% for m in row.raw_data_parsed.machines %}
+                        {% for t in m.tests %}
+                          <li class="meta" style="color: var(--text-dark);">
+                            <span class="mono" style="font-size:11px; padding:2px 4px;">{{ t.test_id }}</span> &middot; {{ t.test_name }}
+                          </li>
+                        {% endfor %}
+                      {% endfor %}
+                    </ul>
+                  </td>
+                  <td style="text-align: center; display: flex; flex-direction: column; gap: 8px; align-items: center;">
+                    <a class="btn btn-secondary btn-action-sm" style="text-decoration: none; width: 100%;"
+                       href="/push-command?sample_id={{ row.reference_no | urlencode }}&patient_id={{ row.patient_id | urlencode }}&patient_name={{ row.patient_name | urlencode }}&dob={{ row.dob_str | urlencode }}&gender={{ row.gender_str | urlencode }}&test_ids={{ row.test_ids_str | urlencode }}">
+                      Send to Analyzer
+                    </a>
+                    <button class="btn btn-primary btn-action-sm" style="width: 100%;" type="button"
+                            onclick="manualPushBooking('{{ row.reference_no }}', this)"
+                            {% if not row.has_match %}disabled{% endif %}>
+                      Push Results
+                    </button>
+                  </td>
+                </tr>
+                {% else %}
+                <tr>
+                  <td colspan="4" style="text-align: center; color: var(--text-muted); font-style: italic; padding: 40px;">No bookings synchronised from Piysan LIS yet. Configure credentials and click "Fetch Latest Bookings" above.</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="table-container">
+        <div class="card" id="cardPiysanLogs" style="padding: 24px;">
+          <h2 style="margin-bottom: 16px;">Transmission History Logs</h2>
+          <div class="table-responsive">
+            <table class="grid-table">
+              <thead>
+                <tr>
+                  <th style="width: 160px;">Time</th>
+                  <th>Booking Ref</th>
+                  <th style="width: 100px;">Status</th>
+                  <th>Payload Sent</th>
+                  <th>Response Received</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for log in logs %}
+                <tr>
+                  <td style="font-size: 13px; color: var(--text-muted);">{{ log.submitted_at }}</td>
+                  <td class="mono">{{ log.reference_no }}</td>
+                  <td>
+                    {% if log.status == 'success' %}
+                      <span class="badge badge-success">Success</span>
+                    {% else %}
+                      <span class="badge badge-danger" title="{{ log.error_message }}">Failed</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    <details>
+                      <summary>Payload Details</summary>
+                      <pre>{{ log.payload }}</pre>
+                    </details>
+                  </td>
+                  <td>
+                    {% if log.status == 'success' %}
+                      <details>
+                        <summary>API Response</summary>
+                        <pre>{{ log.response }}</pre>
+                      </details>
+                    {% else %}
+                      <div style="font-size:12px; color:var(--danger-color); font-weight:600;">{{ log.error_message }}</div>
+                    {% endif %}
+                  </td>
+                </tr>
+                {% else %}
+                <tr>
+                  <td colspan="5" style="text-align: center; color: var(--text-muted); font-style: italic; padding: 30px;">No submission logs recorded yet.</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </section>
+  </main>
+
+  <script>
+    async function testConnection() {
+      const btn = document.getElementById('btnTestConnection');
+      const originalText = btn.textContent;
+      btn.disabled = true;
+      btn.textContent = 'Testing...';
+
+      // Clear alert banners
+      const alertContainer = document.getElementById('statusAlertContainer');
+      alertContainer.innerHTML = '';
+
+      try {
+        const response = await fetch('/piysan/test-connection', { method: 'POST' });
+        const data = await response.json();
+        
+        if (response.ok) {
+          alertContainer.innerHTML = `<div class="banner" id="bannerSuccess">${data.message}</div>`;
+          document.getElementById('connectionBadge').className = 'badge badge-success';
+          document.getElementById('connectionBadge').textContent = 'Active Session';
+        } else {
+          alertContainer.innerHTML = `<div class="warning" id="bannerWarning">${data.message}</div>`;
+        }
+      } catch (err) {
+        alertContainer.innerHTML = `<div class="warning" id="bannerWarning">Failed to test connection: ${err.message}</div>`;
+      } finally {
+        btn.disabled = false;
+        btn.textContent = originalText;
+      }
+    }
+
+    async function manualPushBooking(refNo, button) {
+      const originalText = button.textContent;
+      button.disabled = true;
+      button.textContent = 'Pushing...';
+
+      // Clear alert banners
+      const alertContainer = document.getElementById('statusAlertContainer');
+      alertContainer.innerHTML = '';
+
+      try {
+        const response = await fetch(`/piysan/submit/${refNo}`, { method: 'POST' });
+        const data = await response.json();
+        
+        if (response.ok) {
+          alertContainer.innerHTML = `<div class="banner" id="bannerSuccess">${data.message}</div>`;
+          setTimeout(() => window.location.reload(), 1500);
+        } else {
+          alertContainer.innerHTML = `<div class="warning" id="bannerWarning">Submit failed: ${data.message}</div>`;
+          button.disabled = false;
+          button.textContent = originalText;
+        }
+      } catch (err) {
+        alertContainer.innerHTML = `<div class="warning" id="bannerWarning">Submit failed: ${err.message}</div>`;
+        button.disabled = false;
+        button.textContent = originalText;
+      }
+    }
+  </script>
+</body>
+</html>

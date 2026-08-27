@@ -1,0 +1,24 @@
+# Python virtual environments
+.venv/
+venv/
+ENV/
+env/
+
+# Python cache and compiled files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Pytest cache
+.pytest_cache/
+
+# Environment files
+.env
+
+# ZIP files
+*.zip
+
+# Agent/IDE directories
+.claude/
+.gemini/
+artifacts/

@@ -1,0 +1,532 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mapping Setup - LIS ASTM Gateway</title>
+  <meta name="description" content="Manage translation mappings between analyzer device codes and laboratory information system test codes.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-slate: #f8fafc;
+      --card-bg: #ffffff;
+      --text-dark: #0f172a;
+      --text-muted: #64748b;
+      --border-color: #e2e8f0;
+      
+      --accent-indigo: #4f46e5;
+      --accent-teal: #0d9488;
+      --accent-gradient: linear-gradient(135deg, var(--accent-indigo), var(--accent-teal));
+      --accent-soft: rgba(79, 70, 229, 0.08);
+      
+      --danger-color: #ef4444;
+      --danger-soft: rgba(239, 68, 68, 0.08);
+      --success-color: #10b981;
+      --success-soft: rgba(16, 185, 129, 0.08);
+      --warning-color: #f59e0b;
+      --warning-soft: rgba(245, 158, 11, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+      transition: all 0.2s ease-in-out;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: 'Inter', sans-serif;
+      color: var(--text-dark);
+      background-color: var(--bg-slate);
+      background-image: radial-gradient(circle at 0% 0%, rgba(79, 70, 229, 0.03) 0%, transparent 50%),
+                        radial-gradient(circle at 100% 100%, rgba(13, 148, 136, 0.03) 0%, transparent 50%);
+    }
+
+    /* Header & Navigation */
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 20px 40px;
+      background: rgba(255, 255, 255, 0.8);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border-color);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .brand-section {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-logo {
+      width: 36px;
+      height: 36px;
+      background: var(--accent-gradient);
+      border-radius: 10px;
+      display: grid;
+      place-items: center;
+      color: white;
+      font-weight: 800;
+      font-size: 18px;
+      box-shadow: 0 4px 10px rgba(79, 70, 229, 0.25);
+    }
+
+    .brand-name {
+      font-weight: 700;
+      font-size: 18px;
+      letter-spacing: -0.02em;
+    }
+
+    .nav-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .nav-btn {
+      text-decoration: none;
+      color: var(--text-muted);
+      padding: 10px 18px;
+      border-radius: 12px;
+      font-weight: 600;
+      font-size: 14px;
+      border: 1px solid transparent;
+    }
+
+    .nav-btn:hover {
+      color: var(--text-dark);
+      background: var(--border-color);
+    }
+
+    .nav-btn.active {
+      color: var(--accent-indigo);
+      background: var(--accent-soft);
+      border-color: rgba(79, 70, 229, 0.15);
+    }
+
+    .btn-logout {
+      text-decoration: none;
+      color: var(--danger-color);
+      background: var(--danger-soft);
+      padding: 10px 18px;
+      border-radius: 12px;
+      font-weight: 600;
+      font-size: 14px;
+      border: 1px solid transparent;
+    }
+
+    .btn-logout:hover {
+      background: var(--danger-color);
+      color: white;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);
+    }
+
+    .pill-user {
+      display: inline-flex;
+      align-items: center;
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: #f1f5f9;
+      color: var(--text-muted);
+      font-weight: 500;
+      font-size: 13px;
+      border: 1px solid var(--border-color);
+    }
+
+    /* Main Container */
+    main {
+      padding: 40px;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .shell {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 24px;
+      padding: 32px;
+      box-shadow: 0 10px 30px rgba(15, 23, 42, 0.04);
+    }
+
+    .pill-page {
+      display: inline-block;
+      padding: 6px 14px;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: var(--accent-indigo);
+      font-weight: 700;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 16px;
+    }
+
+    h1 {
+      margin: 0 0 12px;
+      font-size: 36px;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+    }
+
+    .sub {
+      margin: 0 0 24px;
+      color: var(--text-muted);
+      font-size: 16px;
+      line-height: 1.6;
+      max-width: 900px;
+    }
+
+    /* Banners */
+    .banner, .warning {
+      margin-bottom: 24px;
+      padding: 16px 20px;
+      border-radius: 16px;
+      font-size: 14px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .banner {
+      background: var(--success-soft);
+      color: var(--success-color);
+      border: 1px solid rgba(16, 185, 129, 0.15);
+    }
+
+    .warning {
+      background: var(--warning-soft);
+      color: var(--warning-color);
+      border: 1px solid rgba(245, 158, 11, 0.15);
+    }
+
+    /* Grids */
+    .info-grid, .controls-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+      gap: 20px;
+      margin-bottom: 24px;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 20px;
+      padding: 24px;
+      box-shadow: 0 2px 4px rgba(15, 23, 42, 0.02);
+    }
+
+    .card h2 {
+      margin: 0 0 18px;
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 10px;
+    }
+
+    label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      display: block;
+      margin-bottom: 8px;
+    }
+
+    select, input[type="text"] {
+      width: 100%;
+      padding: 14px 16px;
+      border-radius: 12px;
+      border: 1px solid var(--border-color);
+      background: #ffffff;
+      font-size: 14px;
+      color: var(--text-dark);
+      font-family: inherit;
+      font-weight: 500;
+    }
+
+    select:focus, input[type="text"]:focus {
+      outline: none;
+      border-color: var(--accent-indigo);
+      box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12);
+    }
+
+    .field {
+      margin-bottom: 18px;
+    }
+
+    .actions {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 24px;
+    }
+
+    .btn {
+      border: 0;
+      border-radius: 12px;
+      padding: 14px 20px;
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .btn-primary {
+      color: #ffffff;
+      background: var(--accent-gradient);
+      box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(79, 70, 229, 0.4);
+    }
+
+    .btn-primary:active {
+      transform: translateY(0);
+    }
+
+    .btn-delete {
+      color: var(--danger-color);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      background: transparent;
+      padding: 8px 14px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .btn-delete:hover {
+      background: var(--danger-color);
+      color: white;
+      border-color: var(--danger-color);
+      box-shadow: 0 4px 10px rgba(239, 68, 68, 0.15);
+    }
+
+    /* Saved Mappings Table */
+    .table-container {
+      margin-top: 10px;
+    }
+
+    .table-responsive {
+      width: 100%;
+      overflow-x: auto;
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      background: #ffffff;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .grid-table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 14px;
+    }
+
+    .grid-table th {
+      background: #f8fafc;
+      color: var(--text-muted);
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .grid-table td {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border-color);
+      color: var(--text-dark);
+      font-weight: 500;
+    }
+
+    .grid-table tr:last-child td {
+      border-bottom: 0;
+    }
+
+    .grid-table tr:hover td {
+      background: #fafafa;
+    }
+
+    .mono {
+      font-family: Consolas, Monaco, monospace;
+      font-size: 13px;
+      background: #f1f5f9;
+      padding: 4px 8px;
+      border-radius: 6px;
+      display: inline-block;
+      font-weight: 600;
+    }
+
+    /* Responsiveness */
+    @media (max-width: 768px) {
+      header {
+        padding: 16px 20px;
+      }
+      main {
+        padding: 16px;
+      }
+      .shell {
+        padding: 20px;
+      }
+      h1 {
+        font-size: 28px;
+      }
+      .info-grid, .controls-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand-section">
+      <div class="brand-logo">H</div>
+      <div class="brand-name">LIS ASTM Gateway</div>
+      <div class="pill-user">Logged in as {{ username }}</div>
+    </div>
+    <nav class="nav-group">
+      <a class="nav-btn" href="/dashboard" id="navDashboard">Dashboard</a>
+      <a class="nav-btn active" href="/mapping" id="navMapping">Mapping Setup</a>
+      <a class="nav-btn" href="/test-results" id="navResults">Test Results</a>
+      <a class="nav-btn" href="/push-command" id="navPush">Push Command</a>
+      <a class="nav-btn" href="/piysan" id="navPiysan">Piysan LIS</a>
+      <a class="btn-logout" href="/logout" id="navLogout">Logout</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="shell">
+      <span class="pill-page">Customer Installation Setup</span>
+      <h1>Map Lab IDs to Device IDs</h1>
+      <p class="sub">Select the connected device, then enter your laboratory’s internal test ID and choose a matching device master analyte code. Click Map to save the pairing into the configuration database.</p>
+      
+      {% if saved %}
+      <div class="banner" id="bannerSuccess">Mapping saved successfully.</div>
+      {% endif %}
+      {% if duplicate %}
+      <div class="warning" id="bannerWarning">This machine test analyte is already mapped for the selected device.</div>
+      {% endif %}
+      {% if catalog_error %}
+      <div class="warning" id="bannerError">{{ catalog_error }}</div>
+      {% endif %}
+
+      <div class="info-grid">
+        <div class="card" id="cardCustomer">
+          <h2>Customer Account</h2>
+          <div class="mono" style="font-size: 15px; padding: 6px 12px;">{{ customer_name }}</div>
+        </div>
+        <div class="card" id="cardConnectedDevice">
+          <h2>Connected Device</h2>
+          <form method="post" action="/mapping/select-machine" id="formSelectMachine">
+            <label for="machine_id">Active Device Link</label>
+            <select id="machine_id" name="machine_id" onchange="this.form.submit()">
+              {% for option in machines %}
+              <option value="{{ option.id }}" {% if option.id == active_machine.id %}selected{% endif %}>Connected Device - {{ option.machine_name }}</option>
+              {% endfor %}
+            </select>
+          </form>
+        </div>
+      </div>
+
+      <div class="controls-grid">
+        <div class="card" id="cardMapPair">
+          <h2>Map Test Pair</h2>
+          <form method="post" action="/mapping/map" id="formMapPair">
+            <input type="hidden" name="user_id" value="{{ user.id }}">
+            <input type="hidden" name="machine_id" value="{{ active_machine.id }}">
+            <div class="field">
+              <label for="lab_test_id">Lab System Test ID</label>
+              <input type="text" id="lab_test_id" name="lab_test_id" placeholder="e.g. 5678" list="lab_test_suggestions" required>
+              <datalist id="lab_test_suggestions">
+                {% for option in lab_tests %}
+                <option value="{{ option.test_id }}">{{ option.test_id }} - {{ option.test_name }}</option>
+                {% endfor %}
+              </datalist>
+            </div>
+            <div class="field">
+              <label for="machine_test_id">Analyzer Device Analyte ID</label>
+              <select id="machine_test_id" name="machine_test_master_id" required>
+                <option value="" disabled selected>Select an analyzer code</option>
+                {% for option in device_options %}
+                <option value="{{ option.value }}">{{ option.label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="actions">
+              <button class="btn btn-primary" type="submit" id="btnSubmitMap">Map Codes</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="card" id="cardHowItWorks">
+          <h2>Configuration Concept</h2>
+          <p class="sub" style="font-size: 14px; margin-bottom: 0;">Each saved row links one test analyte ID from your analyzer data feed to your laboratory's master test catalog. When raw ASTM packets arrive from the instrument, this lookup mapping translates the parameters instantly into the structured output JSON fields.</p>
+        </div>
+      </div>
+
+      <div class="table-container">
+        <div class="card" id="cardSavedMappings" style="padding: 24px;">
+          <h2 style="margin-bottom: 16px;">Saved Code Mappings</h2>
+          <div class="table-responsive">
+            <table class="grid-table">
+              <thead>
+                <tr>
+                  <th>Row #</th>
+                  <th>Mapping Type</th>
+                  <th>Lab Test ID</th>
+                  <th>Device Analyte ID</th>
+                  <th>Final Output Field</th>
+                  <th style="width: 80px;">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for row in mapping_rows %}
+                <tr>
+                  <td>{{ row.row_no }}</td>
+                  <td><span class="pill-page" style="margin-bottom:0; font-size:10px; padding:3px 8px; font-weight:600;">{{ row.mapping_type }}</span></td>
+                  <td class="mono">{{ row.lab_test_id }}</td>
+                  <td class="mono">{{ row.machine_test_id }}</td>
+                  <td class="mono" style="color: var(--accent-teal);">{{ row.final_json_field }}</td>
+                  <td>
+                    <form method="post" action="/mapping/delete" onsubmit="return confirm('Are you sure you want to delete this mapping?');" style="margin:0;">
+                      <input type="hidden" name="mapping_id" value="{{ row.id }}">
+                      <input type="hidden" name="machine_id" value="{{ active_machine.id }}">
+                      <button class="btn-delete" type="submit" id="btnDelete-{{ row.id }}">Delete</button>
+                    </form>
+                  </td>
+                </tr>
+                {% endfor %}
+                {% if not mapping_rows %}
+                <tr>
+                  <td colspan="6" style="text-align: center; color: var(--text-muted); font-style: italic; padding: 30px;">No code mappings configured yet for this device.</td>
+                </tr>
+                {% endif %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

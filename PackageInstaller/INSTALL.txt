@@ -1,0 +1,173 @@
+LAB DECODER SERVICE - INSTALLATION INSTRUCTIONS
+================================================
+
+WHAT YOU RECEIVED
+------------------
+A folder named "PackageInstaller" containing everything needed to install
+the Lab Decoder Service on this Windows PC. It installs itself as a
+background Windows service, so it starts automatically with the computer
+and keeps running without anyone needing to keep a window open.
+
+This copy is locked to run only on the ONE PC it's installed on (see
+"LICENSING" below) - it will not work if copied to a different PC without
+a new license.
+
+
+BEFORE YOU START
+-----------------
+1. This must be installed on the PC that is (or will be) connected to the
+   HORIBA Yumizen H500/H500E analyzer.
+2. Python 3.11 or newer must be installed on this PC, with the box
+   "Add python.exe to PATH" checked during its setup.
+   Download it from: https://www.python.org/downloads/
+3. This PC needs internet access during installation (to download some
+   required Python packages). After installation, internet access is not
+   required for normal day-to-day use.
+
+
+STEP 1 - COPY THE FOLDER
+--------------------------
+Copy the entire "PackageInstaller" folder onto this PC, for example to:
+
+    C:\LabDecoderService
+
+Do not rename any of the files inside it.
+
+
+STEP 2 - RUN THE INSTALLER
+-----------------------------
+1. Click Start, type "PowerShell", right-click "Windows PowerShell" and
+   choose "Run as administrator".
+2. In the PowerShell window, type the following two lines, pressing Enter
+   after each one (replace the path if you copied the folder somewhere
+   other than C:\LabDecoderService):
+
+       cd C:\LabDecoderService
+       Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+
+3. Then type:
+
+       .\install.ps1
+
+   and press Enter. This will take a few minutes. It will:
+     - Set up everything the service needs to run
+     - Lock the software to this PC
+     - Install and start the "Lab Decoder Service" in the background
+
+
+STEP 3 - LICENSE ACTIVATION
+------------------------------
+This software will not run without a license issued specifically for this
+PC. When install.ps1 finishes, one of two things happens:
+
+  A) It says the service is installed and running - you're done, skip to
+     STEP 4.
+
+  B) It prints a "Machine ID" (a code like AB12-CD34-EF56-7890) and says
+     the service is not running yet. If so:
+
+       1. Send that Machine ID to whoever provided this software.
+       2. They will send you back a file named "license.lic".
+       3. Copy that file directly into the C:\LabDecoderService folder
+          (the same folder as install.ps1) - do not rename it or change
+          its contents.
+       4. In the same administrator PowerShell window, run:
+
+              .\manage_service.ps1 start
+
+       5. The service should now start. If it still doesn't, see
+          TROUBLESHOOTING below.
+
+
+STEP 4 - CHECK IT'S WORKING
+------------------------------
+Open a web browser on this PC and go to:
+
+    http://127.0.0.1:8000
+
+You should see a login screen. Log in with:
+
+    Username: admin
+    Password: admin123
+
+IMPORTANT: change this password before relying on the system - see
+"CHANGE THE DEFAULT PASSWORD" below.
+
+The analyzer connects to this PC on network port 5000 - no action needed
+for that, it happens automatically once the service is running.
+
+
+CHANGE THE DEFAULT PASSWORD
+------------------------------
+1. In the C:\LabDecoderService folder, open the file named ".env" using
+   Notepad.
+2. Add a new line at the end:
+
+       ADMIN_PASSWORD=YourNewStrongPasswordHere
+
+3. Save and close the file.
+4. In an administrator PowerShell window, in the C:\LabDecoderService
+   folder, run:
+
+       .\manage_service.ps1 restart
+
+5. Log back in with the new password.
+
+
+DAY-TO-DAY MANAGEMENT
+------------------------
+All of these are run from an administrator PowerShell window, inside the
+C:\LabDecoderService folder:
+
+    .\manage_service.ps1 start        (start the service)
+    .\manage_service.ps1 stop         (stop the service)
+    .\manage_service.ps1 restart      (restart the service)
+    .\manage_service.ps1 status       (check if it's running)
+
+You can also find "Lab Decoder Service" in the Windows Services app
+(search "Services" in the Start menu) to start/stop/check it there instead.
+
+
+UNINSTALLING
+--------------
+From an administrator PowerShell window, in the C:\LabDecoderService
+folder, run:
+
+    .\uninstall.ps1
+
+This removes the background service. It does not delete your captured
+data or settings - delete the whole folder afterward if you want to
+remove everything.
+
+
+TROUBLESHOOTING
+------------------
+"python is not recognized"
+    Python isn't installed, or wasn't added to PATH during its setup.
+    Reinstall Python and make sure "Add python.exe to PATH" is checked.
+
+Port 8000 or 5000 already in use
+    Something else on this PC is already using that network port.
+    Contact whoever provided this software for help changing it.
+
+The service shows as "Stopped" a few seconds after starting
+    Open the file: C:\LabDecoderService\logs\service.log
+    The last few lines explain what went wrong - the most common cause is
+    a missing or incorrect license.lic file (see STEP 3).
+
+"License file is invalid" or "not valid for this machine"
+    The license.lic file doesn't match this PC, or got corrupted when it
+    was sent to you (for example, some email programs alter file
+    contents). Run this in an administrator PowerShell window to see this
+    PC's current Machine ID, and confirm it matches what the license was
+    issued for:
+
+        cd C:\LabDecoderService
+        .\.venv\Scripts\python.exe -m app.services.license
+
+    If it doesn't match, ask whoever provided the software to re-issue the
+    license for this Machine ID.
+
+Anything else
+    Check C:\LabDecoderService\logs\service.log first, then contact
+    whoever provided this software with the contents of that file.

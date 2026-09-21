@@ -7,11 +7,11 @@ below.
 ## Prerequisites
 
 - Windows 10/11 (or Windows Server)
-- Python 3.14 installed, with **"Add python.exe to PATH"** checked during
-  setup (download from https://www.python.org/downloads/ if not already
-  installed). This must match — see "About this build" below.
+- Python 3.11 or newer installed, with **"Add python.exe to PATH"** checked
+  during setup (download from https://www.python.org/downloads/ if not
+  already installed).
 - Internet access on this machine during install (to download the Python
-  packages listed in `requirements.txt`), or a pre-populated pip cache
+  packages listed in `requirements.txt`), or a pre-populated pip cache.
 
 ## Install
 
@@ -28,46 +28,70 @@ below.
    This will:
    - Create a local virtual environment (`.venv`)
    - Install all required Python packages
+   - Generate a `.env` file with a random `SESSION_SECRET_KEY` (if one
+     doesn't already exist)
+   - Compile the application to bytecode and **delete the `.py` source
+     files** (see "Licensing and code protection" below)
    - Register **LabDecoderService** as a Windows service
    - Start the service immediately
 
-4. Once it finishes, open a browser to **http://127.0.0.1:8000**.
-   - Default login: **admin / admin123**
+4. **The service will refuse to start without a license.** If this is a
+   machine that hasn't been licensed yet, `install.ps1` will print that
+   machine's ID at the end — send it to your vendor, drop the `license.lic`
+   file they send back into this folder, then run `.\manage_service.ps1 start`.
+
+5. Once it's running, open a browser to **http://127.0.0.1:8000**.
+   - Default login: **admin / admin123** (change this — see below)
    - Health check: http://127.0.0.1:8000/health
 
 The service also listens on **TCP port 5000** for direct analyzer
 (HORIBA Yumizen H500/H500E) socket connections.
 
-## About this build
+## Licensing and code protection
 
-The application code is shipped as compiled Python bytecode (`.pyc` files)
-rather than plain source (`.py`) — the source itself is not included in this
-package. Everything installs and runs exactly the same way; there is nothing
-different to do here.
+This build is locked to run only on the machine it's licensed for, and ships
+no readable Python source:
 
-This build was compiled against **Python 3.14** specifically — `.pyc`
-bytecode is tied to the exact Python minor version that produced it (its
-"magic number"). If the target machine has a different version (3.11, 3.12,
-3.13, ...), the service will fail to start with an error like
-`RuntimeError: Bad magic number in .pyc file`. Check with:
+- **Hardware lock**: the service checks `license.lic` (next to
+  `service_installer.pyc`) against this machine's identity at every startup.
+  Copying this folder to another PC will not work there without a new
+  license issued for that PC. To get one, run
+  `.\.venv\Scripts\python.exe -m app.services.license` in this folder to
+  print the machine ID, and send it to your vendor.
+- **No source on disk**: `install.ps1` compiles every `.py` file to bytecode
+  (`.pyc`) using this machine's own Python — so, unlike a pre-compiled build,
+  it's never pinned to a specific Python version — and then deletes the
+  source. Only compiled bytecode remains after install.
 
-```powershell
-python --version
+## Before going live: change the default admin password
+
+The install ships with a fallback local login of `admin / admin123`. Before
+handing the system to the client, edit `.env` in this folder and add:
+
+```
+ADMIN_PASSWORD=<a strong password>
 ```
 
-If it doesn't say `Python 3.14.x`, install Python 3.14 (or ask whoever built
-this package for a `.pyc` build matching the version you have).
+Then apply it:
+
+```powershell
+.\manage_service.ps1 restart
+```
 
 ## What gets installed
 
 - The service is registered under Windows Services as **"Lab Decoder
   Service"** (`LabDecoderService`), set to run automatically.
 - Data (captures, decoded results, test mappings) is stored under
-  `.\data\*.sqlite3` inside this folder.
+  `.\data\*.sqlite3` inside this folder — created fresh on first run.
 - Generated histogram/scattergram PNGs are stored under `.\artifacts\`.
-- The bundled test-catalog workbook (`data\SK CBC and ESR test id
-  list.xlsx`) powers the test-mapping screen; replace that file (keep the
-  same name) if the client needs an updated catalog.
+- Two bundled workbooks power the test-mapping screen:
+  - `data\new stag test ids.xlsx` — the laboratory's own test ID catalog
+    (lab side of the mapping). Replace this file (keep the same name) if
+    the client's lab test IDs change.
+  - `data\SK CBC and ESR test id list.xlsx` — the HORIBA analyzer's own
+    universal test ID codes (device side of the mapping, `HorribaTestIDs`
+    sheet). This normally does not need to change between installs.
 
 Because the service reads its files relative to this folder, **do not move
 the folder after installation** — reinstall (`install.ps1`) again if it must
@@ -95,9 +119,9 @@ From an elevated PowerShell prompt, in this folder:
 .\uninstall.ps1
 ```
 
-This stops and removes the Windows service. It does **not** delete `.venv`
-or the `data\` folder (so captured data is preserved). Delete the whole
-folder manually if a full removal is required.
+This stops and removes the Windows service. It does **not** delete `.venv`,
+`.env`, or the `data\` folder (so captured data is preserved). Delete the
+whole folder manually if a full removal is required.
 
 ## Troubleshooting
 
@@ -117,3 +141,9 @@ folder manually if a full removal is required.
   Event Viewer under *Windows Logs > Application* for `LabDecoderService`
   errors, or run `.\.venv\Scripts\python.exe service_installer.pyc debug`
   from this folder to see live console output directly (Ctrl+C to stop).
+- **"License file is invalid" / "not valid for this machine"**: the
+  `license.lic` in this folder doesn't match this PC, or was edited/corrupted
+  in transit (e.g. by an email client mangling line endings). Re-run
+  `.\.venv\Scripts\python.exe -m app.services.license` to get this machine's
+  current ID and confirm it matches what the license was issued for; if not,
+  ask your vendor to re-issue it.

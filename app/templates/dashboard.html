@@ -3,11 +3,13 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>User Dashboard - LIS ASTM Gateway</title>
-  <meta name="description" content="Overview of lab analyzer mappings, network status, connected devices, and stats.">
+  <title>Lab Orders Operations Dashboard - LIS ASTM Gateway</title>
+  <meta name="description" content="Unified single-screen laboratory worklist: synchronized orders, real-time analyzer decoding status, QR label generation, analyzer dispatch, and Piysan LIS submission.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- JsBarcode for client-side linear specimen barcode generation -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jsbarcode/3.11.6/JsBarcode.all.min.js"></script>
   <style>
     :root {
       --bg-slate: #f8fafc;
@@ -17,23 +19,30 @@
       --border-color: #e2e8f0;
       
       --accent-indigo: #4f46e5;
+      --accent-indigo-hover: #4338ca;
       --accent-teal: #0d9488;
-      --accent-gradient: linear-gradient(135deg, var(--accent-indigo), var(--accent-teal));
+      --accent-gradient: linear-gradient(135deg, #4f46e5, #0d9488);
       --accent-soft: rgba(79, 70, 229, 0.08);
       
       --danger-color: #ef4444;
-      --danger-soft: rgba(239, 68, 68, 0.08);
+      --danger-soft: rgba(239, 68, 68, 0.1);
+      --success-color: #10b981;
+      --success-soft: rgba(16, 185, 129, 0.1);
+      --warning-color: #f59e0b;
+      --warning-soft: rgba(245, 158, 11, 0.1);
+      --purple-color: #8b5cf6;
+      --purple-soft: rgba(139, 92, 246, 0.1);
     }
 
     * {
       box-sizing: border-box;
-      transition: all 0.2s ease-in-out;
+      transition: all 0.15s ease-in-out;
     }
 
     body {
       margin: 0;
       min-height: 100vh;
-      font-family: 'Inter', sans-serif;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
       color: var(--text-dark);
       background-color: var(--bg-slate);
       background-image: radial-gradient(circle at 0% 0%, rgba(79, 70, 229, 0.03) 0%, transparent 50%),
@@ -45,10 +54,10 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 20px 40px;
-      background: rgba(255, 255, 255, 0.8);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
+      padding: 16px 36px;
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
       border-bottom: 1px solid var(--border-color);
       position: sticky;
       top: 0;
@@ -64,20 +73,20 @@
     }
 
     .brand-logo {
-      width: 36px;
-      height: 36px;
+      width: 38px;
+      height: 38px;
       background: var(--accent-gradient);
       border-radius: 10px;
       display: grid;
       place-items: center;
       color: white;
       font-weight: 800;
-      font-size: 18px;
-      box-shadow: 0 4px 10px rgba(79, 70, 229, 0.25);
+      font-size: 19px;
+      box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25);
     }
 
     .brand-name {
-      font-weight: 700;
+      font-weight: 800;
       font-size: 18px;
       letter-spacing: -0.02em;
     }
@@ -92,16 +101,16 @@
     .nav-btn {
       text-decoration: none;
       color: var(--text-muted);
-      padding: 10px 18px;
-      border-radius: 12px;
+      padding: 9px 16px;
+      border-radius: 10px;
       font-weight: 600;
-      font-size: 14px;
+      font-size: 13.5px;
       border: 1px solid transparent;
     }
 
     .nav-btn:hover {
       color: var(--text-dark);
-      background: var(--border-color);
+      background: #f1f5f9;
     }
 
     .nav-btn.active {
@@ -114,10 +123,10 @@
       text-decoration: none;
       color: var(--danger-color);
       background: var(--danger-soft);
-      padding: 10px 18px;
-      border-radius: 12px;
+      padding: 9px 16px;
+      border-radius: 10px;
       font-weight: 600;
-      font-size: 14px;
+      font-size: 13.5px;
       border: 1px solid transparent;
     }
 
@@ -125,329 +134,1669 @@
       background: var(--danger-color);
       color: white;
       transform: translateY(-1px);
-      box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);
     }
 
     .pill-user {
       display: inline-flex;
       align-items: center;
-      padding: 6px 12px;
+      padding: 5px 12px;
       border-radius: 999px;
       background: #f1f5f9;
       color: var(--text-muted);
       font-weight: 500;
-      font-size: 13px;
+      font-size: 12.5px;
       border: 1px solid var(--border-color);
     }
 
     /* Main Container */
     main {
-      padding: 40px;
-      max-width: 1400px;
+      padding: 28px 36px 60px;
+      max-width: 1550px;
       margin: 0 auto;
     }
 
-    .shell {
-      background: var(--card-bg);
-      border: 1px solid var(--border-color);
-      border-radius: 24px;
-      padding: 32px;
-      box-shadow: 0 10px 30px rgba(15, 23, 42, 0.04);
+    .hero-banner {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+      gap: 16px;
     }
 
-    .pill-page {
-      display: inline-block;
-      padding: 6px 14px;
+    .hero-title h1 {
+      margin: 0 0 6px;
+      font-size: 28px;
+      font-weight: 800;
+      letter-spacing: -0.025em;
+    }
+
+    .hero-title p {
+      margin: 0;
+      color: var(--text-muted);
+      font-size: 14.5px;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    /* KPI Summary Cards */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+
+    .kpi-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 18px 22px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      box-shadow: 0 2px 6px rgba(15, 23, 42, 0.02);
+      cursor: pointer;
+    }
+
+    .kpi-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 18px rgba(15, 23, 42, 0.05);
+      border-color: rgba(79, 70, 229, 0.25);
+    }
+
+    .kpi-icon {
+      width: 46px;
+      height: 46px;
+      border-radius: 12px;
+      display: grid;
+      place-items: center;
+      font-size: 20px;
+      flex-shrink: 0;
+    }
+
+    .kpi-total .kpi-icon { background: var(--accent-soft); color: var(--accent-indigo); }
+    .kpi-pending .kpi-icon { background: var(--danger-soft); color: var(--danger-color); }
+    .kpi-decoded .kpi-icon { background: var(--success-soft); color: var(--success-color); }
+    .kpi-submitted .kpi-icon { background: var(--purple-soft); color: var(--purple-color); }
+    .kpi-skipped .kpi-icon { background: #f1f5f9; color: var(--text-muted); }
+
+    .kpi-content .kpi-num {
+      font-size: 26px;
+      font-weight: 800;
+      line-height: 1.1;
+      color: var(--text-dark);
+    }
+
+    .kpi-content .kpi-label {
+      font-size: 12.5px;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    /* Worklist Shell */
+    .worklist-shell {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 20px;
+      padding: 24px;
+      box-shadow: 0 4px 16px rgba(15, 23, 42, 0.03);
+      margin-bottom: 28px;
+    }
+
+    .toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+
+    .filter-tabs {
+      display: flex;
+      gap: 6px;
+      background: #f1f5f9;
+      padding: 4px;
+      border-radius: 12px;
+      border: 1px solid var(--border-color);
+      flex-wrap: wrap;
+    }
+
+    .filter-tab {
+      background: transparent;
+      border: none;
+      padding: 7px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-muted);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .filter-tab:hover {
+      color: var(--text-dark);
+    }
+
+    .filter-tab.active {
+      background: #ffffff;
+      color: var(--accent-indigo);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+    }
+
+    .filter-tab .badge-count {
+      padding: 2px 6px;
       border-radius: 999px;
+      font-size: 11px;
+      background: rgba(100, 116, 139, 0.12);
+      color: var(--text-muted);
+    }
+
+    .filter-tab.active .badge-count {
       background: var(--accent-soft);
       color: var(--accent-indigo);
+    }
+
+    .search-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-grow: 1;
+      max-width: 440px;
+    }
+
+    .search-input {
+      width: 100%;
+      padding: 9px 16px;
+      border-radius: 10px;
+      border: 1px solid var(--border-color);
+      font-size: 13.5px;
+      background: #ffffff;
+      outline: none;
+    }
+
+    .search-input:focus {
+      border-color: var(--accent-indigo);
+      box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12);
+    }
+
+    /* Table Design */
+    .table-container {
+      overflow-x: auto;
+      border: 1px solid var(--border-color);
+      border-radius: 14px;
+      background: #ffffff;
+    }
+
+    .orders-table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 13.5px;
+    }
+
+    .orders-table th {
+      background: #f8fafc;
+      color: var(--text-muted);
       font-weight: 700;
       font-size: 12px;
       text-transform: uppercase;
-      letter-spacing: 0.05em;
-      margin-bottom: 16px;
-    }
-
-    h1 {
-      margin: 0 0 12px;
-      font-size: 36px;
-      font-weight: 800;
-      letter-spacing: -0.03em;
-    }
-
-    .sub {
-      margin: 0 0 32px;
-      color: var(--text-muted);
-      font-size: 16px;
-      line-height: 1.6;
-      max-width: 900px;
-    }
-
-    /* Dashboard Grid Layout */
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
-      gap: 20px;
-      margin-top: 20px;
-    }
-
-    .card {
-      background: var(--card-bg);
-      border: 1px solid var(--border-color);
-      border-radius: 20px;
-      padding: 24px;
-      box-shadow: 0 2px 4px rgba(15, 23, 42, 0.02);
-      display: flex;
-      flex-direction: column;
-      height: 100%;
-    }
-
-    .card:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 12px 24px rgba(15, 23, 42, 0.06);
-      border-color: rgba(79, 70, 229, 0.2);
-    }
-
-    .card h2 {
-      margin: 0 0 18px;
-      font-size: 18px;
-      font-weight: 700;
-      letter-spacing: -0.01em;
+      letter-spacing: 0.04em;
+      padding: 13px 18px;
       border-bottom: 1px solid var(--border-color);
-      padding-bottom: 10px;
+      white-space: nowrap;
     }
 
-    .label {
-      color: var(--text-muted);
-      font-size: 11px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      margin-bottom: 4px;
+    .orders-table td {
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--border-color);
+      vertical-align: middle;
     }
 
-    .value {
-      font-size: 15px;
+    .orders-table tbody tr:hover {
+      background-color: #fbfcfe;
+    }
+
+    .orders-table tbody tr.row-skipped {
+      opacity: 0.55;
+      background-color: #f8fafc;
+    }
+
+    /* Pulse Dots (Red / Green) */
+    .status-dot-wrapper {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
       font-weight: 600;
-      color: var(--text-dark);
-      margin-bottom: 16px;
+      font-size: 13px;
+      cursor: pointer;
     }
 
-    .value:last-child {
-      margin-bottom: 0;
+    .status-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      position: relative;
+      flex-shrink: 0;
     }
 
-    .machine-list {
-      margin: 0;
-      padding-left: 20px;
+    .status-dot-red {
+      background-color: var(--danger-color);
+      box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+      animation: pulse-red 2s infinite;
+    }
+
+    .status-dot-green {
+      background-color: var(--success-color);
+      box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+      animation: pulse-green 2s infinite;
+    }
+
+    @keyframes pulse-red {
+      0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.6); }
+      70% { box-shadow: 0 0 0 7px rgba(239, 68, 68, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+    }
+
+    @keyframes pulse-green {
+      0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+      70% { box-shadow: 0 0 0 7px rgba(16, 185, 129, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+    }
+
+    .ref-code {
+      font-family: 'JetBrains Mono', Consolas, monospace;
+      font-weight: 700;
       color: var(--text-dark);
-      font-size: 15px;
-      line-height: 1.8;
+      background: #f1f5f9;
+      padding: 3px 7px;
+      border-radius: 6px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+    }
+
+    .btn-copy {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 2px 4px;
+      font-size: 12px;
+      border-radius: 4px;
+    }
+
+    .btn-copy:hover {
+      color: var(--accent-indigo);
+      background: rgba(79, 70, 229, 0.08);
+    }
+
+    .patient-name {
+      font-weight: 700;
+      color: var(--text-dark);
+      margin-bottom: 2px;
+    }
+
+    .patient-meta {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .test-pill-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      max-width: 320px;
+    }
+
+    .test-pill {
+      font-size: 11.5px;
+      font-weight: 600;
+      padding: 3px 8px;
+      border-radius: 6px;
+      background: #f1f5f9;
+      color: var(--text-dark);
+      border: 1px solid var(--border-color);
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .test-pill .tid {
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 700;
+      color: var(--accent-indigo);
+    }
+
+    /* Buttons & Actions */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-size: 12.5px;
+      font-weight: 600;
+      border: 1px solid transparent;
+      cursor: pointer;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+
+    .btn-primary {
+      background: var(--accent-gradient);
+      color: #ffffff;
+      box-shadow: 0 2px 8px rgba(79, 70, 229, 0.25);
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 14px rgba(79, 70, 229, 0.35);
+    }
+
+    .btn-secondary {
+      background: #ffffff;
+      color: var(--text-dark);
+      border: 1px solid var(--border-color);
+    }
+
+    .btn-secondary:hover:not(:disabled) {
+      background: #f8fafc;
+      border-color: #cbd5e1;
+    }
+
+    .btn-success {
+      background: #10b981;
+      color: white;
+      box-shadow: 0 2px 8px rgba(16, 185, 129, 0.25);
+    }
+
+    .btn-success:hover:not(:disabled) {
+      background: #059669;
+      transform: translateY(-1px);
+    }
+
+    .btn-warning {
+      background: #fef3c7;
+      color: #b45309;
+      border: 1px solid #fde68a;
+    }
+
+    .btn-warning:hover {
+      background: #fde68a;
+    }
+
+    .btn-icon {
+      padding: 7px 10px;
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none !important;
+      box-shadow: none !important;
+    }
+
+    .action-group {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 9px;
+      border-radius: 999px;
+      font-size: 11.5px;
+      font-weight: 700;
+    }
+
+    .badge-success { background: var(--success-soft); color: var(--success-color); }
+    .badge-danger { background: var(--danger-soft); color: var(--danger-color); }
+    .badge-warning { background: var(--warning-soft); color: var(--warning-color); }
+    .badge-muted { background: #f1f5f9; color: var(--text-muted); }
+
+    /* Pagination */
+    .pagination-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 18px;
+      margin-top: 16px;
+      border-top: 1px solid var(--border-color);
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .pagination-info {
+      font-size: 13px;
+      color: var(--text-muted);
       font-weight: 500;
     }
 
-    .machine-list li {
-      margin-bottom: 4px;
+    .pagination-controls {
+      display: flex;
+      align-items: center;
+      gap: 6px;
     }
 
-    /* Stats & Callouts */
-    .stats {
+    .page-btn {
+      min-width: 34px;
+      height: 34px;
+      padding: 0 8px;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      background: #ffffff;
+      color: var(--text-dark);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
-      gap: 20px;
+      place-items: center;
+    }
+
+    .page-btn:hover:not(:disabled) {
+      background: #f1f5f9;
+      border-color: #cbd5e1;
+    }
+
+    .page-btn.active {
+      background: var(--accent-indigo);
+      color: white;
+      border-color: var(--accent-indigo);
+    }
+
+    .page-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    /* Collapsible System Setup */
+    .details-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 20px;
       margin-top: 24px;
     }
 
-    .stat {
-      background: linear-gradient(180deg, #ffffff, #f8fafc);
-      border: 1px solid var(--border-color);
-      border-radius: 20px;
-      padding: 24px;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-    }
-
-    .stat:hover {
-      border-color: rgba(79, 70, 229, 0.2);
-    }
-
-    .stat .num {
-      font-size: 40px;
-      font-weight: 800;
-      color: var(--accent-indigo);
-      line-height: 1;
-    }
-
-    .stat .text {
-      color: var(--text-muted);
-      font-size: 14px;
-      margin-top: 10px;
-      line-height: 1.5;
-    }
-
-    .btn-nav-link {
-      display: inline-block;
-      text-decoration: none;
-      color: white;
-      background: var(--accent-gradient);
-      padding: 12px 24px;
-      border-radius: 12px;
-      font-weight: 600;
-      font-size: 14px;
-      text-align: center;
-      box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25);
-    }
-
-    .btn-nav-link:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(79, 70, 229, 0.4);
-    }
-
-    .btn-nav-link:active {
-      transform: translateY(0);
-    }
-
-    .footer {
-      margin-top: 40px;
-      padding-top: 24px;
-      border-top: 1px solid var(--border-color);
-      color: var(--text-muted);
-      display: flex;
-      justify-content: space-between;
-      gap: 16px;
-      flex-wrap: wrap;
-      font-size: 13px;
-      font-weight: 500;
-    }
-
-    .brand {
+    .details-card summary {
       font-weight: 700;
+      font-size: 15px;
+      cursor: pointer;
+      color: var(--text-dark);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      user-select: none;
+    }
+
+    .details-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 16px;
+      margin-top: 18px;
+    }
+
+    .info-tile {
+      background: #f8fafc;
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 16px;
+    }
+
+    .info-tile .tile-lbl {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 4px;
+    }
+
+    .info-tile .tile-val {
+      font-size: 14px;
+      font-weight: 600;
       color: var(--text-dark);
     }
 
-    .mono {
-      font-family: Consolas, Monaco, monospace;
-      font-size: 14px;
-      background: #f1f5f9;
-      padding: 4px 8px;
-      border-radius: 6px;
-      display: inline-block;
+    /* Modal Backdrop & Windows */
+    .modal-backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.55);
+      backdrop-filter: blur(4px);
+      z-index: 1000;
+      place-items: center;
+      padding: 20px;
     }
 
-    /* Screen Responsiveness adjustments */
-    @media (max-width: 768px) {
-      header {
-        padding: 16px 20px;
+    .modal-backdrop.active {
+      display: grid;
+    }
+
+    .modal-window {
+      background: #ffffff;
+      border-radius: 20px;
+      width: 100%;
+      max-width: 620px;
+      max-height: 90vh;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+      overflow: hidden;
+      animation: modal-slide 0.2s ease-out;
+    }
+
+    @keyframes modal-slide {
+      from { transform: translateY(16px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    .modal-header {
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #fafafa;
+    }
+
+    .modal-header h3 {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 800;
+      letter-spacing: -0.01em;
+    }
+
+    .modal-close {
+      background: none;
+      border: none;
+      font-size: 22px;
+      color: var(--text-muted);
+      cursor: pointer;
+      line-height: 1;
+      padding: 4px;
+      border-radius: 6px;
+    }
+
+    .modal-close:hover {
+      color: var(--text-dark);
+      background: #e2e8f0;
+    }
+
+    .modal-body {
+      padding: 24px;
+      overflow-y: auto;
+    }
+
+    .modal-footer {
+      padding: 16px 24px;
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      background: #fafafa;
+    }
+
+    /* Specimen Vial Barcode Label Styles */
+    .vial-card {
+      border: 2px dashed #94a3b8;
+      border-radius: 12px;
+      padding: 16px 20px;
+      background: #ffffff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.04);
+      max-width: 440px;
+      margin: 0 auto;
+    }
+
+    .vial-header {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #e2e8f0;
+      padding-bottom: 6px;
+      margin-bottom: 8px;
+    }
+
+    .vial-lab {
+      font-size: 11px;
+      font-weight: 800;
+      color: var(--accent-indigo);
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .vial-date {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-weight: 600;
+      font-feature-settings: 'tnum';
+    }
+
+    .vial-patient-row {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 6px;
+      gap: 10px;
+    }
+
+    .vial-patient {
+      font-size: 15px;
+      font-weight: 800;
+      color: var(--text-dark);
+      letter-spacing: -0.01em;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .vial-patient-meta {
+      font-size: 11.5px;
+      color: var(--text-muted);
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .barcode-wrapper {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: #ffffff;
+      padding: 8px 6px;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      margin: 6px 0;
+      overflow-x: auto;
+    }
+
+    .barcode-wrapper svg {
+      max-width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    .vial-tests {
+      width: 100%;
+      font-size: 11px;
+      font-weight: 600;
+      color: #475569;
+      line-height: 1.35;
+      margin-top: 6px;
+      padding-top: 6px;
+      border-top: 1px dashed #e2e8f0;
+      word-break: break-word;
+    }
+
+    /* Toast Notifications */
+    .toast-container {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      z-index: 2000;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      pointer-events: none;
+    }
+
+    .toast {
+      pointer-events: auto;
+      background: #1e293b;
+      color: #ffffff;
+      padding: 12px 18px;
+      border-radius: 10px;
+      font-size: 13.5px;
+      font-weight: 500;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      animation: toast-in 0.2s ease-out;
+    }
+
+    .toast-success { background: #065f46; border-left: 4px solid #10b981; }
+    .toast-error { background: #881337; border-left: 4px solid #f43f5e; }
+
+    @keyframes toast-in {
+      from { transform: translateY(12px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    /* Print View for Specimen Barcode Label */
+    @media print {
+      body * {
+        visibility: hidden;
       }
-      main {
-        padding: 16px;
+      #printArea, #printArea * {
+        visibility: visible;
       }
-      .shell {
-        padding: 20px;
+      #printArea {
+        position: fixed;
+        left: 50%;
+        top: 20px;
+        transform: translateX(-50%);
+        width: 330px;
+        margin: 0;
+        padding: 12px;
+        border: 1px solid #000;
+        box-shadow: none;
       }
-      h1 {
-        font-size: 28px;
-      }
-      .footer {
-        flex-direction: column;
-        align-items: center;
-        text-align: center;
-      }
+    }
+
+    @media (max-width: 900px) {
+      header { padding: 12px 18px; }
+      main { padding: 16px; }
+      .worklist-shell { padding: 16px; }
+      .toolbar { flex-direction: column; align-items: stretch; }
+      .search-group { max-width: 100%; }
     }
   </style>
 </head>
 <body>
+  <!-- Navigation Header -->
   <header>
     <div class="brand-section">
       <div class="brand-logo">H</div>
-      <div class="brand-name">LIS ASTM Gateway</div>
-      <div class="pill-user">Logged in as {{ username }}</div>
+      <div>
+        <div class="brand-name">LIS ASTM Gateway</div>
+        <div style="font-size: 11px; color: var(--text-muted);">HORIBA Yumizen Middleware</div>
+      </div>
+      <div class="pill-user" style="margin-left: 8px;">Logged in as <strong>{{ username }}</strong></div>
     </div>
     <nav class="nav-group">
-      <a class="nav-btn active" href="/dashboard" id="navDashboard">Dashboard</a>
+      <a class="nav-btn active" href="/dashboard" id="navDashboard">Worklist Dashboard</a>
       <a class="nav-btn" href="/mapping" id="navMapping">Mapping Setup</a>
-      <a class="nav-btn" href="/test-results" id="navResults">Test Results</a>
-      <a class="nav-btn" href="/push-command" id="navPush">Push Command</a>
-      <a class="nav-btn" href="/piysan" id="navPiysan">Piysan LIS</a>
+      <a class="nav-btn" href="/test-results" id="navResults">Raw Analyzer Captures</a>
+      <a class="nav-btn" href="/push-command" id="navPush">ASTM Dispatcher</a>
+      <a class="nav-btn" href="/piysan" id="navPiysan">Piysan LIS Settings</a>
       <a class="btn-logout" href="/logout" id="navLogout">Logout</a>
     </nav>
   </header>
-  
+
   <main>
-    <section class="shell">
-      <span class="pill-page">Operational Dashboard</span>
-      <h1>{{ user_name }}</h1>
-      <p class="sub">This dashboard gives the lab owner a quick operational view of the configured installation, connected machine list, network configurations, and usage count statistics.</p>
+    <!-- Hero Banner -->
+    <div class="hero-banner">
+      <div class="hero-title">
+        <h1>Laboratory Orders Worklist</h1>
+        <p>Synchronized from Piysan LIS &bull; Real-time analyzer decoding status &bull; One-click specimen dispatch and report submission</p>
+      </div>
+      <div class="header-actions">
+        <form method="post" action="/piysan/fetch-bookings" id="syncForm" style="margin: 0;">
+          <input type="hidden" name="next_page" value="/dashboard">
+          <button type="submit" class="btn btn-secondary" id="btnSyncBookings" title="Fetch latest orders from Piysan staging server">
+            <span>&#x21bb;</span> Fetch Latest Orders
+          </button>
+        </form>
+        <a href="/push-command" class="btn btn-primary" id="btnNewPush">
+          <span>+</span> Push ASTM Order
+        </a>
+      </div>
+    </div>
 
-      <div class="grid">
-        <div class="card" id="cardUserDetails">
-          <h2>User Details</h2>
-          <div class="label">User Name</div>
-          <div class="value">{{ user_name }}</div>
-          
-          <div class="label">Address</div>
-          <div class="value">{{ address }}</div>
-          
-          <div class="label">Contact</div>
-          <div class="value">{{ contact }}</div>
-        </div>
-
-        <div class="card" id="cardMachines">
-          <h2>Connected Machines</h2>
-          <div class="label">Active Instruments</div>
-          <ul class="machine-list">
-            {% for machine in machines %}
-            <li>{{ machine.machine_name }}</li>
-            {% endfor %}
-          </ul>
-        </div>
-
-        <div class="card" id="cardMachineNetwork">
-          <h2>Analyzer Network</h2>
-          <div class="label">Machine IP Address</div>
-          <div class="value"><span class="mono">{{ machine_ip }}</span></div>
-          
-          <div class="label">Subnet Mask</div>
-          <div class="value"><span class="mono">{{ machine_subnet_mask }}</span></div>
-          
-          <div class="label">Communication Port</div>
-          <div class="value"><span class="mono">{{ machine_port }}</span></div>
-        </div>
-
-        <div class="card" id="cardComputerNetwork">
-          <h2>Host Network</h2>
-          <div class="label">Computer IP Address</div>
-          <div class="value"><span class="mono">{{ computer_ip }}</span></div>
-          
-          <div class="label">Subnet Mask</div>
-          <div class="value"><span class="mono">{{ computer_subnet_mask }}</span></div>
+    <!-- KPI Metric Cards -->
+    <div class="kpi-grid">
+      <div class="kpi-card kpi-total" onclick="setFilter('all')">
+        <div class="kpi-icon">&#x1F4CB;</div>
+        <div class="kpi-content">
+          <div class="kpi-num" id="kpiTotal">{{ total_orders }}</div>
+          <div class="kpi-label">Total Sync Orders</div>
         </div>
       </div>
 
-      <div class="stats">
-        <div class="stat" id="statTestsCompleted">
-          <div>
-            <div class="num">{{ test_count }}</div>
-            <div class="text">Total test results processed by this gateway since installation.</div>
-          </div>
-        </div>
-        <div class="stat" id="statGoToMapping">
-          <div>
-            <div class="num">Map</div>
-            <div class="text">Map incoming analyzer test codes to your lab’s internal master test codes.</div>
-          </div>
-          <div style="margin-top: 16px;">
-            <a class="btn-nav-link" href="/mapping" id="btnDashboardMapLink">Configure Mappings</a>
-          </div>
+      <div class="kpi-card kpi-pending" onclick="setFilter('pending')">
+        <div class="kpi-icon">&#x1F534;</div>
+        <div class="kpi-content">
+          <div class="kpi-num" id="kpiPending">{{ pending_count }}</div>
+          <div class="kpi-label">Pending Analyzer Run</div>
         </div>
       </div>
 
-      <div class="footer">
-        <div>Copyright &copy; {{ 2026 }} ClickMicrosystem Pvt Ltd. All rights reserved.</div>
-        <div class="brand">Developed by ClickMicrosystem Pvt Ltd</div>
+      <div class="kpi-card kpi-decoded" onclick="setFilter('decoded')">
+        <div class="kpi-icon">&#x1F7E2;</div>
+        <div class="kpi-content">
+          <div class="kpi-num" id="kpiDecoded">{{ decoded_count }}</div>
+          <div class="kpi-label">Decoded &amp; Ready</div>
+        </div>
+      </div>
+
+      <div class="kpi-card kpi-submitted" onclick="setFilter('submitted')">
+        <div class="kpi-icon">&#x2714;</div>
+        <div class="kpi-content">
+          <div class="kpi-num" id="kpiSubmitted">{{ submitted_count }}</div>
+          <div class="kpi-label">Submitted to LIS</div>
+        </div>
+      </div>
+
+      <div class="kpi-card kpi-skipped" onclick="setFilter('skipped')">
+        <div class="kpi-icon">&#x23ED;</div>
+        <div class="kpi-content">
+          <div class="kpi-num" id="kpiSkipped">{{ skipped_count }}</div>
+          <div class="kpi-label">Skipped Orders</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Central Worklist Shell -->
+    <section class="worklist-shell">
+      <!-- Toolbar: Filter Tabs + Search -->
+      <div class="toolbar">
+        <div class="filter-tabs">
+          <button class="filter-tab active" data-filter="all" onclick="setFilter('all')">
+            All Orders <span class="badge-count" id="badgeAll">{{ total_orders }}</span>
+          </button>
+          <button class="filter-tab" data-filter="pending" onclick="setFilter('pending')">
+            <span class="status-dot status-dot-red" style="width: 8px; height: 8px; display: inline-block;"></span> Pending Analyzer <span class="badge-count" id="badgePending">{{ pending_count }}</span>
+          </button>
+          <button class="filter-tab" data-filter="decoded" onclick="setFilter('decoded')">
+            <span class="status-dot status-dot-green" style="width: 8px; height: 8px; display: inline-block;"></span> Decoded <span class="badge-count" id="badgeDecoded">{{ decoded_count }}</span>
+          </button>
+          <button class="filter-tab" data-filter="submitted" onclick="setFilter('submitted')">
+            Submitted <span class="badge-count" id="badgeSubmitted">{{ submitted_count }}</span>
+          </button>
+          <button class="filter-tab" data-filter="skipped" onclick="setFilter('skipped')">
+            Skipped <span class="badge-count" id="badgeSkipped">{{ skipped_count }}</span>
+          </button>
+        </div>
+
+        <div class="search-group">
+          <input type="text" class="search-input" id="searchInput" placeholder="Search by reference no, patient name, mobile, test..." oninput="handleSearch()">
+          <select id="pageSizeSelect" class="btn btn-secondary" onchange="changePageSize()" style="padding: 9px 12px; font-size: 13px;">
+            <option value="10">10 / page</option>
+            <option value="25">25 / page</option>
+            <option value="50">50 / page</option>
+            <option value="1000">Show All</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Orders Table -->
+      <div class="table-container">
+        <table class="orders-table" id="ordersTable">
+          <thead>
+            <tr>
+              <th style="width: 130px;">Result Status</th>
+              <th>Reference No</th>
+              <th>Patient Details</th>
+              <th>Assigned Tests</th>
+              <th>Decoded Results</th>
+              <th style="text-align: right; width: 330px;">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="ordersTableBody">
+            <!-- Rendered dynamically by JavaScript -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination Footer -->
+      <div class="pagination-bar">
+        <div class="pagination-info" id="paginationInfo">Showing 0 to 0 of 0 orders</div>
+        <div class="pagination-controls" id="paginationControls">
+          <!-- Rendered dynamically -->
+        </div>
       </div>
     </section>
+
+    <!-- Collapsible Hardware & Network Diagnostics Section -->
+    <details class="details-card">
+      <summary>
+        <span>&#x1F4DF; Connected Analyzers &amp; Network Configuration</span>
+        <span style="font-size: 12px; color: var(--accent-indigo); font-weight: 600;">Click to view/hide &#x25BC;</span>
+      </summary>
+      <div class="details-grid">
+        <div class="info-tile">
+          <div class="tile-lbl">Connected Instruments</div>
+          <div class="tile-val">
+            {% if machines %}
+              {% for m in machines %}{{ m.machine_name }}{% if not loop.last %}, {% endif %}{% endfor %}
+            {% else %}
+              HORIBA Yumizen H500/H500E (Auto-detected)
+            {% endif %}
+          </div>
+        </div>
+        <div class="info-tile">
+          <div class="tile-lbl">Analyzer Target IP &amp; Port</div>
+          <div class="tile-val"><span class="ref-code">{{ machine_ip }}:{{ machine_port }}</span></div>
+        </div>
+        <div class="info-tile">
+          <div class="tile-lbl">Host / Computer IP Address</div>
+          <div class="tile-val"><span class="ref-code">{{ computer_ip }}</span></div>
+        </div>
+        <div class="info-tile">
+          <div class="tile-lbl">Total ASTM Results Decoded</div>
+          <div class="tile-val" style="color: var(--accent-indigo); font-size: 18px; font-weight: 800;">{{ test_count }}</div>
+        </div>
+      </div>
+    </details>
   </main>
+
+  <!-- ==================== MODALS ==================== -->
+
+  <!-- 1. Decoded Results Pop-up Modal -->
+  <div class="modal-backdrop" id="resultsModal">
+    <div class="modal-window">
+      <div class="modal-header">
+        <div>
+          <h3 id="resModalTitle">Decoded Analyzer Results</h3>
+          <div style="font-size: 12.5px; color: var(--text-muted); margin-top: 2px;" id="resModalSub"></div>
+        </div>
+        <button class="modal-close" onclick="closeModal('resultsModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+          <div class="badge badge-success" id="resModalStatus">&#x1F7E2; Decoded from Analyzer</div>
+          <div style="font-size: 12px; color: var(--text-muted);" id="resModalTime"></div>
+        </div>
+        <div class="table-container">
+          <table class="orders-table" style="font-size: 13px;">
+            <thead>
+              <tr>
+                <th>Test Parameter</th>
+                <th>Test ID</th>
+                <th>Measured Value</th>
+                <th>Unit</th>
+                <th>Flag</th>
+              </tr>
+            </thead>
+            <tbody id="resModalTableBody">
+              <!-- Rendered dynamically -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal('resultsModal')">Close</button>
+        <button class="btn btn-primary" id="btnResModalSubmit" onclick="submitCurrentModalResult()">
+          <span>&#x27A4;</span> Push Report to Piysan LIS
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. Specimen Tube Barcode Label Modal -->
+  <div class="modal-backdrop" id="barcodeModal">
+    <div class="modal-window" style="max-width: 500px;">
+      <div class="modal-header">
+        <h3>Specimen Tube Barcode Label</h3>
+        <button class="modal-close" onclick="closeModal('barcodeModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div id="printArea" class="vial-card">
+          <div class="vial-header">
+            <span class="vial-lab">{{ user_name or 'SK LAB &bull; PATHOLOGY' }}</span>
+            <span class="vial-date" id="barcodeDate">2026-09-04</span>
+          </div>
+          <div class="vial-patient-row">
+            <span class="vial-patient" id="barcodePatientName">Patient Name</span>
+            <span class="vial-patient-meta" id="barcodePatientMeta">PID: -</span>
+          </div>
+          <div class="barcode-wrapper">
+            <svg id="barcodeCanvas"></svg>
+          </div>
+          <div class="vial-tests" id="barcodeTests">Tests: CBC</div>
+        </div>
+        <div style="margin-top: 14px; font-size: 12px; color: var(--text-muted); text-align: center;">
+          Standard linear Code 128 barcode. Scannable directly by HORIBA Yumizen, Sysmex, Mindray, and handheld 1D/2D laser scanners.
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal('barcodeModal')">Close</button>
+        <button class="btn btn-primary" onclick="window.print()">
+          <span>&#x1F5A8;</span> Print Barcode Label
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. Quick Machine Push Modal -->
+  <div class="modal-backdrop" id="pushModal">
+    <div class="modal-window" style="max-width: 520px;">
+      <div class="modal-header">
+        <h3>Dispatch Order to Analyzer</h3>
+        <button class="modal-close" onclick="closeModal('pushModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div style="background: #f8fafc; border: 1px solid var(--border-color); border-radius: 12px; padding: 14px; margin-bottom: 16px;">
+          <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 2px;">Target Instrument</div>
+          <div style="font-weight: 700; font-size: 14px;">Yumizen H500 / H500E (<span class="mono">{{ machine_ip }}:{{ machine_port }}</span>)</div>
+        </div>
+
+        <div style="margin-bottom: 12px;">
+          <label style="font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Sample ID / Barcode</label>
+          <input type="text" id="quickSampleId" class="search-input" readonly style="margin-top: 4px; font-weight: 700; background: #f1f5f9;">
+        </div>
+
+        <div style="margin-bottom: 12px;">
+          <label style="font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Patient Name</label>
+          <input type="text" id="quickPatientName" class="search-input" readonly style="margin-top: 4px; background: #f1f5f9;">
+        </div>
+
+        <div style="margin-bottom: 12px;">
+          <label style="font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Mapped Test Codes</label>
+          <input type="text" id="quickTestIds" class="search-input" readonly style="margin-top: 4px; background: #f1f5f9;">
+        </div>
+        <div id="quickPushStatus" style="display: none; padding: 10px; border-radius: 8px; font-size: 13px; margin-top: 10px;"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal('pushModal')">Cancel</button>
+        <button class="btn btn-primary" id="btnExecuteQuickPush" onclick="executeQuickPush()">
+          <span>&#x26A1;</span> Dispatch ASTM Order Now
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- Embedded Raw Bookings Data for Fast Client-Side Search, Filter & Pagination -->
+  <script>
+    const ALL_BOOKINGS = {{ bookings | tojson | safe }};
+    let currentFilter = 'all';
+    let searchQuery = '';
+    let currentPage = 1;
+    let pageSize = 10;
+    let activeModalRef = null;
+    let qrInstance = null;
+
+    // Initialize View
+    document.addEventListener("DOMContentLoaded", () => {
+      renderTable();
+    });
+
+    function showToast(message, isError = false) {
+      const container = document.getElementById("toastContainer");
+      const toast = document.createElement("div");
+      toast.className = `toast ${isError ? 'toast-error' : 'toast-success'}`;
+      toast.innerHTML = `<span>${isError ? '&#x26A0;' : '&#x2714;'}</span><span>${message}</span>`;
+      container.appendChild(toast);
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(10px)';
+        setTimeout(() => toast.remove(), 200);
+      }, 4000);
+    }
+
+    function copyToClipboard(text) {
+      navigator.clipboard.writeText(text).then(() => {
+        showToast(`Copied "${text}" to clipboard!`);
+      }).catch(() => {
+        prompt("Copy to clipboard:", text);
+      });
+    }
+
+    function setFilter(filter) {
+      currentFilter = filter;
+      currentPage = 1;
+      document.querySelectorAll(".filter-tab").forEach(tab => {
+        tab.classList.toggle("active", tab.getAttribute("data-filter") === filter);
+      });
+      renderTable();
+    }
+
+    function handleSearch() {
+      searchQuery = document.getElementById("searchInput").value.trim().toLowerCase();
+      currentPage = 1;
+      renderTable();
+    }
+
+    function changePageSize() {
+      pageSize = parseInt(document.getElementById("pageSizeSelect").value, 10);
+      currentPage = 1;
+      renderTable();
+    }
+
+    function getFilteredBookings() {
+      const list = ALL_BOOKINGS.filter(b => {
+        // Status Filter
+        if (currentFilter === 'pending') {
+          if (b.is_skipped || b.has_match) return false;
+        } else if (currentFilter === 'decoded') {
+          if (b.is_skipped || !b.has_match) return false;
+        } else if (currentFilter === 'submitted') {
+          if (b.last_status !== 'success') return false;
+        } else if (currentFilter === 'skipped') {
+          if (!b.is_skipped) return false;
+        }
+
+        // Search Filter
+        if (searchQuery) {
+          const ref = (b.reference_no || '').toLowerCase();
+          const name = (b.patient_name || '').toLowerCase();
+          const pid = (b.patient_id || '').toLowerCase();
+          const raw = JSON.stringify(b.raw_data_parsed || {}).toLowerCase();
+          return ref.includes(searchQuery) || name.includes(searchQuery) || pid.includes(searchQuery) || raw.includes(searchQuery);
+        }
+
+        return true;
+      });
+
+      // Always sort descending so newest bookings (e.g. Sept 2026) appear at the top
+      list.sort((a, b) => {
+        const dateA = a.created_on || (a.raw_data_parsed && a.raw_data_parsed.created_on) || a.fetched_at || '';
+        const dateB = b.created_on || (b.raw_data_parsed && b.raw_data_parsed.created_on) || b.fetched_at || '';
+        if (dateA !== dateB) {
+          return dateB.localeCompare(dateA);
+        }
+        return (b.reference_no || '').localeCompare(a.reference_no || '');
+      });
+
+      return list;
+    }
+
+    function renderTable() {
+      const filtered = getFilteredBookings();
+      const total = filtered.length;
+      const totalPages = Math.ceil(total / pageSize) || 1;
+      if (currentPage > totalPages) currentPage = totalPages;
+
+      const startIndex = (currentPage - 1) * pageSize;
+      const endIndex = Math.min(startIndex + pageSize, total);
+      const pageItems = filtered.slice(startIndex, endIndex);
+
+      const tbody = document.getElementById("ordersTableBody");
+      tbody.innerHTML = "";
+
+      if (pageItems.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 48px 20px; font-style: italic;">
+              No matching orders found. Try adjusting your search query or filter tab.
+            </td>
+          </tr>
+        `;
+      } else {
+        pageItems.forEach(b => {
+          const tr = document.createElement("tr");
+          if (b.is_skipped) tr.classList.add("row-skipped");
+
+          // Status indicator
+          let statusDotHtml = '';
+          if (b.is_skipped) {
+            statusDotHtml = `
+              <div class="status-dot-wrapper" title="Order is skipped">
+                <span class="badge badge-muted">&#x23ED; Skipped</span>
+              </div>
+            `;
+          } else if (b.has_match) {
+            statusDotHtml = `
+              <div class="status-dot-wrapper" onclick="openResultsModal('${b.reference_no}')" title="Decoded Results Ready! Click to inspect">
+                <span class="status-dot status-dot-green"></span>
+                <span style="color: var(--success-color); font-weight: 700;">Ready</span>
+              </div>
+            `;
+          } else {
+            statusDotHtml = `
+              <div class="status-dot-wrapper" title="Awaiting Analyzer run">
+                <span class="status-dot status-dot-red"></span>
+                <span style="color: var(--danger-color);">Pending</span>
+              </div>
+            `;
+          }
+
+          // Assigned Tests Pills
+          let testsHtml = '';
+          const machines = (b.raw_data_parsed && b.raw_data_parsed.machines) || [];
+          let testCount = 0;
+          machines.forEach(m => {
+            (m.tests || []).forEach(t => {
+              testCount++;
+              testsHtml += `<span class="test-pill"><span class="tid">${t.test_id}</span> ${t.test_name || 'Test'}</span>`;
+            });
+          });
+          if (!testsHtml) testsHtml = '<span style="color: var(--text-muted); font-size: 12px;">No tests assigned</span>';
+
+          // Decoded summary
+          let decodedHtml = '';
+          if (b.has_match) {
+            const count = (b.match_results || []).length;
+            decodedHtml = `
+              <button class="btn btn-secondary btn-icon" onclick="openResultsModal('${b.reference_no}')" style="font-size: 12px; padding: 4px 8px; border-color: rgba(16,185,129,0.3); background: var(--success-soft); color: var(--success-color); font-weight: 700;">
+                &#x1F7E2; ${count} Decoded &bull; View
+              </button>
+            `;
+          } else {
+            decodedHtml = `<span style="font-size: 12.5px; color: var(--text-muted); font-style: italic;">Awaiting run</span>`;
+          }
+
+          // Submission Status Badge
+          let submitBadge = '';
+          if (b.last_status === 'success') {
+            submitBadge = `<span class="badge badge-success" style="margin-left: 6px;" title="Sent to Piysan">&#x2714; LIS Sent</span>`;
+          } else if (b.last_status === 'failed') {
+            submitBadge = `<span class="badge badge-danger" style="margin-left: 6px;" title="${b.last_error}">&#x26A0; Failed</span>`;
+          }
+
+          const orderDate = b.created_on || (b.raw_data_parsed && b.raw_data_parsed.created_on) || b.fetched_at || '';
+
+          tr.innerHTML = `
+            <td>${statusDotHtml}</td>
+            <td>
+              <div class="ref-code">
+                <span>${b.reference_no}</span>
+                <button class="btn-copy" onclick="copyToClipboard('${b.reference_no}')" title="Copy Reference Number">&#x2398;</button>
+              </div>
+              <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 3px; font-feature-settings: 'tnum';">
+                &#x1F4C5; ${orderDate}
+              </div>
+            </td>
+            <td>
+              <div class="patient-name">${b.patient_name || 'Anonymous Patient'}</div>
+              <div class="patient-meta">ID: ${b.patient_id || 'N/A'} ${b.gender_str ? '&bull; ' + b.gender_str : ''} ${b.dob_str ? '&bull; ' + b.dob_str : ''}</div>
+            </td>
+            <td>
+              <div class="test-pill-list">${testsHtml}</div>
+            </td>
+            <td>
+              <div style="display: flex; align-items: center;">
+                ${decodedHtml}
+                ${submitBadge}
+              </div>
+            </td>
+            <td style="text-align: right;">
+              <div class="action-group" style="justify-content: flex-end;">
+                <button class="btn btn-secondary btn-icon" onclick="openBarcodeModal('${b.reference_no}')" title="Generate Specimen Barcode / Print Tube Label">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" style="display:inline-block; vertical-align:middle; margin-right:3px;">
+                    <rect x="2" y="4" width="2" height="16"/>
+                    <rect x="5.5" y="4" width="1" height="16"/>
+                    <rect x="8" y="4" width="3" height="16"/>
+                    <rect x="12.5" y="4" width="1" height="16"/>
+                    <rect x="15" y="4" width="2" height="16"/>
+                    <rect x="18.5" y="4" width="1" height="16"/>
+                    <rect x="21" y="4" width="1.5" height="16"/>
+                  </svg>
+                  Barcode
+                </button>
+                <button class="btn btn-secondary btn-icon" onclick="openPushModal('${b.reference_no}')" title="Dispatch order to Analyzer Machine">
+                  <span>&#x26A1;</span> Push
+                </button>
+                <button class="btn ${b.is_skipped ? 'btn-warning' : 'btn-secondary'} btn-icon" onclick="toggleSkip('${b.reference_no}', this)" title="${b.is_skipped ? 'Unskip order' : 'Skip order'}">
+                  ${b.is_skipped ? '&#x21A9; Unskip' : '&#x23ED; Skip'}
+                </button>
+                <button class="btn btn-primary" onclick="submitToPiysan('${b.reference_no}', this)" ${!b.has_match ? 'disabled title="Results not decoded yet"' : 'title="Send report to Piysan LIS"'}>
+                  <span>&#x27A4;</span> Submit
+                </button>
+              </div>
+            </td>
+          `;
+          tbody.appendChild(tr);
+        });
+      }
+
+      // Update Pagination Controls
+      document.getElementById("paginationInfo").innerText = total > 0 
+        ? `Showing ${startIndex + 1} to ${endIndex} of ${total} orders`
+        : `Showing 0 to 0 of 0 orders`;
+
+      renderPaginationControls(totalPages);
+    }
+
+    function renderPaginationControls(totalPages) {
+      const controls = document.getElementById("paginationControls");
+      controls.innerHTML = "";
+
+      if (totalPages <= 1) return;
+
+      const prevBtn = document.createElement("button");
+      prevBtn.className = "page-btn";
+      prevBtn.innerHTML = "&laquo;";
+      prevBtn.disabled = currentPage === 1;
+      prevBtn.onclick = () => { currentPage--; renderTable(); };
+      controls.appendChild(prevBtn);
+
+      for (let i = 1; i <= totalPages; i++) {
+        if (i === 1 || i === totalPages || (i >= currentPage - 2 && i <= currentPage + 2)) {
+          const pageBtn = document.createElement("button");
+          pageBtn.className = `page-btn ${i === currentPage ? 'active' : ''}`;
+          pageBtn.innerText = i;
+          pageBtn.onclick = () => { currentPage = i; renderTable(); };
+          controls.appendChild(pageBtn);
+        } else if (i === currentPage - 3 || i === currentPage + 3) {
+          const ellipsis = document.createElement("span");
+          ellipsis.innerText = "...";
+          ellipsis.style.padding = "0 4px";
+          controls.appendChild(ellipsis);
+        }
+      }
+
+      const nextBtn = document.createElement("button");
+      nextBtn.className = "page-btn";
+      nextBtn.innerHTML = "&raquo;";
+      nextBtn.disabled = currentPage === totalPages;
+      nextBtn.onclick = () => { currentPage++; renderTable(); };
+      controls.appendChild(nextBtn);
+    }
+
+    // Modal Operations
+    function openModal(id) {
+      document.getElementById(id).classList.add("active");
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).classList.remove("active");
+    }
+
+    // 1. Decoded Results Modal
+    function openResultsModal(refNo) {
+      const b = ALL_BOOKINGS.find(x => x.reference_no === refNo);
+      if (!b) return;
+      activeModalRef = refNo;
+
+      document.getElementById("resModalTitle").innerText = `Decoded Results: ${b.patient_name || 'Patient'}`;
+      document.getElementById("resModalSub").innerText = `Order Ref: ${b.reference_no} &bull; Sample ID: ${b.patient_id || b.reference_no}`;
+      document.getElementById("resModalTime").innerText = b.decoded_at ? `Captured: ${b.decoded_at}` : '';
+
+      const tbody = document.getElementById("resModalTableBody");
+      tbody.innerHTML = "";
+
+      const results = b.match_results || [];
+      if (results.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--text-muted); padding: 24px;">No decoded numeric test results matched yet for this order.</td></tr>`;
+      } else {
+        results.forEach(r => {
+          const tr = document.createElement("tr");
+          let flagBadge = '<span class="badge badge-muted">N</span>';
+          if (r.flags && r.flags.length > 0) {
+            const f = r.flags[0].toUpperCase();
+            if (f === 'H') flagBadge = '<span class="badge badge-danger">HIGH</span>';
+            else if (f === 'L') flagBadge = '<span class="badge badge-warning">LOW</span>';
+            else flagBadge = `<span class="badge badge-muted">${f}</span>`;
+          }
+          tr.innerHTML = `
+            <td style="font-weight: 700;">${r.test_name}</td>
+            <td><span class="ref-code" style="font-size: 11px;">${r.test_id}</span></td>
+            <td style="font-size: 15px; font-weight: 800; color: var(--accent-indigo);">${r.value}</td>
+            <td style="color: var(--text-muted); font-size: 12px;">${r.unit || '-'}</td>
+            <td>${flagBadge}</td>
+          `;
+          tbody.appendChild(tr);
+        });
+      }
+
+      openModal("resultsModal");
+    }
+
+    async function submitCurrentModalResult() {
+      if (!activeModalRef) return;
+      const btn = document.getElementById("btnResModalSubmit");
+      const originalText = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = `Submitting...`;
+
+      try {
+        const resp = await fetch(`/piysan/submit/${encodeURIComponent(activeModalRef)}`, { method: "POST" });
+        const data = await resp.json();
+        if (resp.ok && data.status === 'success') {
+          showToast(`Report successfully pushed to Piysan LIS!`);
+          const booking = ALL_BOOKINGS.find(x => x.reference_no === activeModalRef);
+          if (booking) booking.last_status = 'success';
+          renderTable();
+          closeModal("resultsModal");
+        } else {
+          showToast(data.message || 'Submission failed', true);
+        }
+      } catch (e) {
+        showToast(`Submission error: ${e.message}`, true);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+      }
+    }
+
+    // Direct submit button in row
+    async function submitToPiysan(refNo, btnElement) {
+      btnElement.disabled = true;
+      const originalText = btnElement.innerHTML;
+      btnElement.innerHTML = `Sending...`;
+
+      try {
+        const resp = await fetch(`/piysan/submit/${encodeURIComponent(refNo)}`, { method: "POST" });
+        const data = await resp.json();
+        if (resp.ok && data.status === 'success') {
+          showToast(`Results submitted to Piysan for ${refNo}!`);
+          const booking = ALL_BOOKINGS.find(x => x.reference_no === refNo);
+          if (booking) booking.last_status = 'success';
+          renderTable();
+        } else {
+          showToast(`Piysan Error: ${data.message || 'Failed'}`, true);
+          btnElement.disabled = false;
+          btnElement.innerHTML = originalText;
+        }
+      } catch (e) {
+        showToast(`Request failed: ${e.message}`, true);
+        btnElement.disabled = false;
+        btnElement.innerHTML = originalText;
+      }
+    }
+
+    // Toggle Skip Order
+    async function toggleSkip(refNo, btnElement) {
+      btnElement.disabled = true;
+      try {
+        const resp = await fetch(`/piysan/skip/${encodeURIComponent(refNo)}`, { method: "POST" });
+        const data = await resp.json();
+        if (resp.ok && data.status === 'success') {
+          const booking = ALL_BOOKINGS.find(x => x.reference_no === refNo);
+          if (booking) {
+            booking.is_skipped = data.is_skipped;
+            showToast(data.is_skipped ? `Order ${refNo} skipped` : `Order ${refNo} restored`);
+          }
+          // Update KPI stats dynamically
+          const skippedCount = ALL_BOOKINGS.filter(b => b.is_skipped).length;
+          const pendingCount = ALL_BOOKINGS.filter(b => !b.has_match && !b.is_skipped).length;
+          const decodedCount = ALL_BOOKINGS.filter(b => b.has_match && !b.is_skipped).length;
+          document.getElementById("kpiSkipped").innerText = skippedCount;
+          document.getElementById("badgeSkipped").innerText = skippedCount;
+          document.getElementById("kpiPending").innerText = pendingCount;
+          document.getElementById("badgePending").innerText = pendingCount;
+          document.getElementById("kpiDecoded").innerText = decodedCount;
+          document.getElementById("badgeDecoded").innerText = decodedCount;
+          renderTable();
+        } else {
+          showToast(`Failed to update skip status`, true);
+          btnElement.disabled = false;
+        }
+      } catch (e) {
+        showToast(`Error: ${e.message}`, true);
+        btnElement.disabled = false;
+      }
+    }
+
+    // 2. Specimen Vial Barcode (Code 128)
+    const CODE128_PATTERNS = [
+      "212222","222122","222221","121223","121322","131222","122213","122312","132212","221213",
+      "221312","231212","112232","122132","122231","113222","123122","123221","223211","221132",
+      "221231","213212","223112","312131","311222","321122","321221","312212","322112","322211",
+      "212123","212321","232121","111323","131123","131321","112313","132113","132311","211313",
+      "231113","231311","112133","112331","132131","113123","113321","133121","313121","211331",
+      "231131","213113","213311","213131","311123","311321","331121","312113","312311","332111",
+      "314111","221411","431111","111224","111422","121124","121421","141122","141221","112214",
+      "112412","122114","122411","142112","142211","241211","221114","413111","241112","134111",
+      "111242","121142","121241","114212","124112","124211","411212","421112","421211","212141",
+      "214121","412121","111143","111341","131141","114113","114311","411113","411311","113141",
+      "114131","311141","411131","211412","211214","211232","2331112"
+    ];
+
+    function renderFallbackBarcode(svgId, text) {
+      const svg = document.getElementById(svgId);
+      if (!svg) return;
+      svg.innerHTML = "";
+
+      // Encode using Code 128 Subset B
+      const codes = [104]; // Start B
+      let checksum = 104;
+      for (let i = 0; i < text.length; i++) {
+        const c = text.charCodeAt(i) - 32;
+        if (c >= 0 && c <= 95) {
+          codes.push(c);
+          checksum += (i + 1) * c;
+        }
+      }
+      codes.push(checksum % 103);
+      codes.push(106); // Stop Code
+
+      let barWidths = "";
+      for (const code of codes) {
+        if (code >= 0 && code < CODE128_PATTERNS.length) {
+          barWidths += CODE128_PATTERNS[code];
+        }
+      }
+
+      const unitWidth = 2;
+      const barHeight = 48;
+      let totalUnits = 0;
+      for (let i = 0; i < barWidths.length; i++) {
+        totalUnits += parseInt(barWidths[i], 10);
+      }
+      const svgWidth = (totalUnits + 20) * unitWidth;
+      const svgHeight = barHeight + 26;
+
+      svg.setAttribute("viewBox", `0 0 ${svgWidth} ${svgHeight}`);
+      svg.setAttribute("width", `${Math.min(svgWidth, 380)}`);
+      svg.setAttribute("height", `${svgHeight}`);
+
+      let currentX = 10 * unitWidth;
+      let svgHtml = `<rect width="100%" height="100%" fill="#ffffff"/>`;
+
+      for (let i = 0; i < barWidths.length; i++) {
+        const w = parseInt(barWidths[i], 10) * unitWidth;
+        const isBar = (i % 2 === 0);
+        if (isBar) {
+          svgHtml += `<rect x="${currentX}" y="4" width="${w}" height="${barHeight}" fill="#0f172a"/>`;
+        }
+        currentX += w;
+      }
+
+      svgHtml += `<text x="${svgWidth / 2}" y="${barHeight + 18}" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-weight="700" font-size="12.5" fill="#0f172a" letter-spacing="1">${text}</text>`;
+      svg.innerHTML = svgHtml;
+    }
+
+    function openBarcodeModal(refNo) {
+      const b = ALL_BOOKINGS.find(x => x.reference_no === refNo);
+      if (!b) return;
+
+      const orderDate = b.created_on || (b.raw_data_parsed && b.raw_data_parsed.created_on) || b.fetched_at || '';
+      document.getElementById("barcodeDate").innerText = orderDate ? `Date: ${orderDate}` : '';
+      document.getElementById("barcodePatientName").innerText = b.patient_name || 'Patient';
+      document.getElementById("barcodePatientMeta").innerText = `PID: ${b.patient_id || 'N/A'} ${b.gender_str ? '• ' + b.gender_str : ''}`;
+
+      let testNames = [];
+      const machines = (b.raw_data_parsed && b.raw_data_parsed.machines) || [];
+      machines.forEach(m => (m.tests || []).forEach(t => testNames.push(t.test_name)));
+      document.getElementById("barcodeTests").innerText = "Assigned Tests: " + (testNames.length ? testNames.join(", ") : "Standard Profile");
+
+      // Generate Code 128 Barcode
+      try {
+        if (typeof JsBarcode !== 'undefined') {
+          JsBarcode("#barcodeCanvas", b.reference_no, {
+            format: "CODE128",
+            width: 2,
+            height: 50,
+            displayValue: true,
+            font: "'JetBrains Mono', monospace",
+            fontOptions: "bold",
+            fontSize: 13,
+            textMargin: 6,
+            margin: 6,
+            lineColor: "#0f172a",
+            background: "#ffffff"
+          });
+        } else {
+          renderFallbackBarcode("barcodeCanvas", b.reference_no);
+        }
+      } catch (err) {
+        console.warn("JsBarcode error, falling back:", err);
+        renderFallbackBarcode("barcodeCanvas", b.reference_no);
+      }
+
+      openModal("barcodeModal");
+    }
+
+    // 3. Quick Push to Machine Modal
+    let activePushBooking = null;
+    function openPushModal(refNo) {
+      const b = ALL_BOOKINGS.find(x => x.reference_no === refNo);
+      if (!b) return;
+      activePushBooking = b;
+
+      document.getElementById("quickSampleId").value = b.reference_no;
+      document.getElementById("quickPatientName").value = b.patient_name || '';
+      document.getElementById("quickTestIds").value = b.test_ids_str || '';
+      document.getElementById("quickPushStatus").style.display = 'none';
+
+      openModal("pushModal");
+    }
+
+    async function executeQuickPush() {
+      if (!activePushBooking) return;
+      const b = activePushBooking;
+      const btn = document.getElementById("btnExecuteQuickPush");
+      const statusBox = document.getElementById("quickPushStatus");
+
+      btn.disabled = true;
+      btn.innerHTML = `Dispatching...`;
+      statusBox.style.display = 'block';
+      statusBox.style.background = '#f1f5f9';
+      statusBox.style.color = 'var(--text-dark)';
+      statusBox.innerHTML = `Transmitting ASTM order frame to analyzer...`;
+
+      try {
+        const resp = await fetch(`/push-command/quick-push`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            sample_id: b.reference_no,
+            patient_id: b.patient_id || b.reference_no,
+            patient_name: b.patient_name || '',
+            dob: b.dob_str || '',
+            gender: b.gender_str || '',
+            test_ids: b.test_ids_str || '',
+          })
+        });
+        const data = await resp.json();
+        if (resp.ok && data.status === 'success') {
+          statusBox.style.background = 'var(--success-soft)';
+          statusBox.style.color = 'var(--success-color)';
+          statusBox.innerHTML = `&#x2714; ${data.message || 'Order dispatched successfully!'}`;
+          showToast(`ASTM Order dispatched for ${b.reference_no}!`);
+          setTimeout(() => closeModal("pushModal"), 1800);
+        } else {
+          statusBox.style.background = 'var(--danger-soft)';
+          statusBox.style.color = 'var(--danger-color)';
+          statusBox.innerHTML = `&#x26A0; ${data.message || 'Dispatch failed'}`;
+        }
+      } catch (e) {
+        statusBox.style.background = 'var(--danger-soft)';
+        statusBox.style.color = 'var(--danger-color)';
+        statusBox.innerHTML = `Error: ${e.message}`;
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `<span>&#x26A1;</span> Dispatch ASTM Order Now`;
+      }
+    }
+  </script>
 </body>
 </html>

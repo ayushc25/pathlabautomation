@@ -358,60 +358,6 @@
       background: rgba(255,255,255,0.2);
     }
 
-    /* Pagination */
-    .pagination-bar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 14px 20px;
-      border-top: 1px solid var(--border-color);
-      flex-wrap: wrap;
-      gap: 12px;
-    }
-
-    .pagination-info {
-      font-size: 13px;
-      color: var(--text-muted);
-      font-weight: 500;
-    }
-
-    .pagination-controls {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    .page-btn {
-      min-width: 34px;
-      height: 34px;
-      padding: 0 8px;
-      border-radius: 8px;
-      border: 1px solid var(--border-color);
-      background: #ffffff;
-      color: var(--text-dark);
-      font-size: 13px;
-      font-weight: 600;
-      cursor: pointer;
-      display: grid;
-      place-items: center;
-    }
-
-    .page-btn:hover:not(:disabled) {
-      background: #f1f5f9;
-      border-color: #cbd5e1;
-    }
-
-    .page-btn.active {
-      background: var(--accent-indigo);
-      color: white;
-      border-color: var(--accent-indigo);
-    }
-
-    .page-btn:disabled {
-      opacity: 0.4;
-      cursor: not-allowed;
-    }
-
     /* Screen Responsiveness */
     @media (max-width: 768px) {
       header {
@@ -597,7 +543,7 @@
                 <th style="background:#f8fafc; color:var(--text-muted); font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; padding:14px 18px; border-bottom:1px solid var(--border-color); width:160px;">Action</th>
               </tr>
             </thead>
-            <tbody id="piysanOrdersTbody">
+            <tbody>
               {% for row in piysan_bookings %}
               <tr>
                 <td style="padding:14px 18px; border-bottom:1px solid var(--border-color); font-family:Consolas,Monaco,monospace; font-size:13px; font-weight:600;">{{ row.reference_no }}</td>
@@ -642,10 +588,6 @@
               {% endfor %}
             </tbody>
           </table>
-        </div>
-        <div class="pagination-bar" id="piysanOrdersPaginationBar">
-          <div class="pagination-info" id="piysanOrdersPaginationInfo"></div>
-          <div class="pagination-controls" id="piysanOrdersPaginationControls"></div>
         </div>
       </div>
 
@@ -741,72 +683,6 @@
   </main>
 
   <script>
-    function setupPagination(tbodyId, infoId, controlsId, barId, pageSize) {
-      const tbody = document.getElementById(tbodyId);
-      const rows = Array.from(tbody.querySelectorAll('tr')).filter(tr => !tr.querySelector('td[colspan]'));
-      const bar = document.getElementById(barId);
-      if (rows.length <= pageSize) {
-        bar.style.display = 'none';
-        return;
-      }
-
-      let currentPage = 1;
-      const totalPages = Math.ceil(rows.length / pageSize);
-
-      function render() {
-        const start = (currentPage - 1) * pageSize;
-        const end = Math.min(start + pageSize, rows.length);
-        rows.forEach((tr, idx) => {
-          tr.style.display = (idx >= start && idx < end) ? '' : 'none';
-        });
-        document.getElementById(infoId).innerText = `Showing ${start + 1} to ${end} of ${rows.length}`;
-        renderControls();
-      }
-
-      function renderControls() {
-        const controls = document.getElementById(controlsId);
-        controls.innerHTML = '';
-
-        const prevBtn = document.createElement('button');
-        prevBtn.type = 'button';
-        prevBtn.className = 'page-btn';
-        prevBtn.innerHTML = '&laquo;';
-        prevBtn.disabled = currentPage === 1;
-        prevBtn.onclick = () => { currentPage--; render(); };
-        controls.appendChild(prevBtn);
-
-        for (let i = 1; i <= totalPages; i++) {
-          if (i === 1 || i === totalPages || (i >= currentPage - 2 && i <= currentPage + 2)) {
-            const pageBtn = document.createElement('button');
-            pageBtn.type = 'button';
-            pageBtn.className = `page-btn ${i === currentPage ? 'active' : ''}`;
-            pageBtn.innerText = i;
-            pageBtn.onclick = () => { currentPage = i; render(); };
-            controls.appendChild(pageBtn);
-          } else if (i === currentPage - 3 || i === currentPage + 3) {
-            const ellipsis = document.createElement('span');
-            ellipsis.innerText = '...';
-            ellipsis.style.padding = '0 4px';
-            controls.appendChild(ellipsis);
-          }
-        }
-
-        const nextBtn = document.createElement('button');
-        nextBtn.type = 'button';
-        nextBtn.className = 'page-btn';
-        nextBtn.innerHTML = '&raquo;';
-        nextBtn.disabled = currentPage === totalPages;
-        nextBtn.onclick = () => { currentPage++; render(); };
-        controls.appendChild(nextBtn);
-      }
-
-      render();
-    }
-
-    document.addEventListener('DOMContentLoaded', () => {
-      setupPagination('piysanOrdersTbody', 'piysanOrdersPaginationInfo', 'piysanOrdersPaginationControls', 'piysanOrdersPaginationBar', 10);
-    });
-
     function updateBarcodePreview() {
       const sampleId = document.getElementById('sample_id').value.trim();
       const patientId = document.getElementById('patient_id').value.trim();

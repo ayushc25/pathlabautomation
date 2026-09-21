@@ -232,7 +232,7 @@ def test_trigger_auto_submit(mock_execute):
     mock_execute.assert_called_once()
     assert mock_execute.call_args[0][0] == "submit_report"
     assert mock_execute.call_args[0][1] == "REF_AUTO"
-    assert mock_execute.call_args[0][2] == [{"test_id": 901, "value": 15.2}]
+    assert mock_execute.call_args[0][2] == {"901": 15.2}
 
     # Verify submission log was created
     logs = load_submission_logs()
@@ -266,7 +266,7 @@ def test_trigger_auto_submit_when_booking_has_no_test_id(mock_execute):
     trigger_auto_submit(100, report)
     mock_execute.assert_called_once()
     assert mock_execute.call_args[0][1] == "REF_NO_TESTID"
-    assert mock_execute.call_args[0][2] == [{"test_id": 901, "value": 42.0}]
+    assert mock_execute.call_args[0][2] == {"901": 42.0}
 
     logs = load_submission_logs()
     assert logs[0]["reference_no"] == "REF_NO_TESTID"
@@ -294,7 +294,7 @@ def test_manual_submit_when_booking_has_no_test_id(mock_execute):
 
     response = manual_submit_to_piysan("REF_MANUAL_NO_TESTID")
     assert response == {"status": "accepted"}
-    mock_execute.assert_called_once_with("submit_report", "REF_MANUAL_NO_TESTID", [{"test_id": 501, "value": 7.7}])
+    mock_execute.assert_called_once_with("submit_report", "REF_MANUAL_NO_TESTID", {"501": 7.7})
 
 
 def test_manual_submit_rejects_order_not_in_bookings():
@@ -362,5 +362,30 @@ def test_enriched_bookings_prefill():
     assert matched[0]["dob_str"] == "1995-05-15"
     assert matched[0]["gender_str"] == "F"
     assert matched[0]["test_ids_str"] == "901"
+    assert matched[0]["is_skipped"] is False
+
+
+def test_toggle_skip_booking():
+    from app.services.piysan_service import toggle_skip_booking
+    booking = {
+        "reference_no": "REF_SKIP_TEST",
+        "patient": {"first_name": "Skip", "last_name": "Me"},
+        "machines": [],
+    }
+    save_piysan_bookings([booking])
+    
+    # Toggle to skipped
+    new_state = toggle_skip_booking("REF_SKIP_TEST")
+    assert new_state is True
+    
+    enriched = load_enriched_bookings()
+    matched = [b for b in enriched if b["reference_no"] == "REF_SKIP_TEST"]
+    assert len(matched) == 1
+    assert matched[0]["is_skipped"] is True
+    
+    # Toggle back to unskipped
+    unskipped = toggle_skip_booking("REF_SKIP_TEST", is_skipped=False)
+    assert unskipped is False
+
 
 

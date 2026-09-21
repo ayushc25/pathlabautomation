@@ -56,28 +56,25 @@ are available at `/docs` (Swagger UI) and `/redoc`.
 For a customer install on Windows, the app can run as a background service so
 the dashboard, API, and socket listener stay up together.
 
-### Install dependencies
+The `PackageInstaller/` folder is a self-contained copy of this project set
+up for exactly that: copy the whole folder to the target machine and run
+`.\install.ps1` from an elevated PowerShell prompt. See
+[PackageInstaller/README.md](PackageInstaller/README.md) for full steps,
+service management (`manage_service.ps1`), and uninstall instructions.
+
+To install directly from this working copy instead (e.g. for local testing):
 
 ```powershell
 pip install -r requirements.txt
-```
-
-### Install and start the service
-
-```powershell
-.\run_service.ps1
-```
-
-This installs and starts `LabDecoderService`.
-
-### Manage manually
-
-```powershell
 .venv\Scripts\python.exe service_installer.py install
 .venv\Scripts\python.exe service_installer.py start
 .venv\Scripts\python.exe service_installer.py stop
 .venv\Scripts\python.exe service_installer.py remove
 ```
+
+Whichever copy you install from, set `SESSION_SECRET_KEY` and
+`ADMIN_PASSWORD` in its `.env` file before exposing it beyond local testing —
+see the warning logged at startup if `SESSION_SECRET_KEY` is left unset.
 
 ### Health
 

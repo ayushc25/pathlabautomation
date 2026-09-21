@@ -10,12 +10,14 @@ param(
 $ErrorActionPreference = 'Stop'
 Set-Location $PSScriptRoot
 
+$entry = if (Test-Path "service_installer.pyc") { "service_installer.pyc" } else { "service_installer.py" }
+
 switch ($Action) {
-    "start"   { .\.venv\Scripts\python.exe service_installer.pyc start }
-    "stop"    { .\.venv\Scripts\python.exe service_installer.pyc stop }
+    "start"   { .\.venv\Scripts\python.exe $entry start }
+    "stop"    { .\.venv\Scripts\python.exe $entry stop }
     "restart" {
-        .\.venv\Scripts\python.exe service_installer.pyc stop
-        .\.venv\Scripts\python.exe service_installer.pyc start
+        .\.venv\Scripts\python.exe $entry stop
+        .\.venv\Scripts\python.exe $entry start
     }
     "status"  { Get-Service -Name "LabDecoderService" | Format-List * }
 }

@@ -22,3 +22,8 @@ __pycache__/
 .claude/
 .gemini/
 artifacts/
+
+# Licensing: the private signing key must never be committed or shipped to
+# a client. Only tools/license_tool.py (vendor-side) touches it.
+vendor_private_key.pem
+*.lic

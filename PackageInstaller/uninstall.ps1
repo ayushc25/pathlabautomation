@@ -15,7 +15,8 @@ if (-not (Test-Admin)) {
     exit 1
 }
 
-.\.venv\Scripts\python.exe service_installer.pyc stop
-.\.venv\Scripts\python.exe service_installer.pyc remove
+$entry = if (Test-Path "service_installer.pyc") { "service_installer.pyc" } else { "service_installer.py" }
+.\.venv\Scripts\python.exe $entry stop
+.\.venv\Scripts\python.exe $entry remove
 
 Write-Host "Lab Decoder Service stopped and removed." -ForegroundColor Green
